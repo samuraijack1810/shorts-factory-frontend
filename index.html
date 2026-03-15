@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Shorts Factory</title>
+<script src="config.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
 <style>
@@ -527,7 +528,6 @@
 <audio id="audioEl" style="display:none;"></audio>
 
 <script>
-// All API keys are stored securely on the backend
 
 const RANDOM_TOPICS = [
   "The mantis shrimp can see 16 types of colour — humans only see 3",
@@ -921,8 +921,11 @@ async function generateScriptOnly() {
   }
 }
 
-// ─── Script API call ─────────────────────────
+// ─── Script API call — direct to Anthropic ──────────
 async function generateScriptAPI() {
+  const apiKey = (typeof CONFIG !== 'undefined' && CONFIG.CLAUDE_API_KEY) || '';
+  if (!apiKey || apiKey.includes('your-')) throw new Error('CLAUDE_API_KEY not set in config.js');
+
   const cat = document.getElementById('catSelect').value;
   const dur = document.getElementById('durSelect').value;
   const tone = document.getElementById('toneSelect').value;
@@ -936,11 +939,12 @@ async function generateScriptAPI() {
   const userPrompt = `Create a ${dur}-second ${tone} YouTube/Instagram Shorts script about: "${topic}"
 Category: ${cat}. Niche: ${niche}.
 Rules:
-- Exactly ${sceneCount} scenes, keep each scene to 2-4 seconds max — short-form audiences need fast visual cuts
+- Exactly ${sceneCount} scenes total — scene count must match exactly
+- Keep each scene to 2-4 seconds max — short-form audiences need fast visual cuts
 - Scene 1: punchy 2-3s scroll-stopping hook, no longer
 - Every factual claim must be 100% scientifically accurate — double check numbers, temperatures, dates
 - Fast breathless narration — no filler words
-- Final scene: clever subscribe CTA (2s max)
+- Final scene: clever subscribe CTA (2-3s max)
 - Visual prompts: cinematic, hyper-realistic, 9:16 vertical, no text in frame, mobile safe zones
 - duration_seconds: must reflect actual scene length (2-4s typically)
 - full_voiceover_script: all voiceover lines as one continuous paragraph`;
@@ -949,27 +953,24 @@ Rules:
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': CLAUDE_API_KEY,
+      'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-5',
+      model: 'claude-sonnet-4-6',
       max_tokens: 2000,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }]
     })
   });
-
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
     throw new Error(err.error?.message || 'Claude API error ' + resp.status);
   }
-
   const data = await resp.json();
   const raw = data.content.map(b => b.text || '').join('');
-  const clean = raw.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
+  return JSON.parse(raw.replace(/```json|```/g, '').trim());
 }
 
 // ─── Fact check ──────────────────────────────
@@ -1076,10 +1077,26 @@ async function generateVoiceover() {
 
 async function generateVoiceoverAPI() {
   const voice = document.getElementById('voiceSelect').value;
-  const resp = await fetch(backendUrl + '/voiceover', {
+  const elKey = (typeof CONFIG !== 'undefined' && CONFIG.ELEVENLABS_API_KEY) || '';
+  if (!elKey || elKey.includes('your-')) throw new Error('ELEVENLABS_API_KEY not set in config.js');
+
+  const VOICE_IDS = {
+    Rachel: '21m00Tcm4TlvDq8ikWAM',
+    Adam:   'pNInz6obpgDQGcFmaJgB',
+    Bella:  'EXAVITQu4vr4xnSDxMaL',
+    Antoni: 'ErXwobaYiN019PkySvjV',
+    Josh:   'TxGEqnHWrfWFTfGW9XjX'
+  };
+  const voiceId = VOICE_IDS[voice] || VOICE_IDS.Rachel;
+
+  const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: lastOutput.full_voiceover_script, voice })
+    headers: { 'Content-Type': 'application/json', 'xi-api-key': elKey },
+    body: JSON.stringify({
+      text: lastOutput.full_voiceover_script,
+      model_id: 'eleven_monolingual_v1',
+      voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+    })
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ error: 'Voiceover failed' }));
@@ -1180,24 +1197,28 @@ async function generateImagesAPI() {
       <div class="img-card-label">Scene ${s.scene_number}: ${s.title}</div>
     </div>`).join('');
 
-  // For Pexels — still fast enough to batch
+  // For Pexels — call directly from browser
   if (imageProvider === 'pexels') {
-    const resp = await fetch(backendUrl + '/generate-images', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        scenes: scenes.map(s => ({ scene_number: s.scene_number, title: s.title, visual_prompt: s.visual_prompt })),
-        model: 'pexels',
-        tags: lastOutput.tags || []
-      })
-    });
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ error: 'Image generation failed' }));
-      throw new Error(err.error || 'Pexels error ' + resp.status);
+    const pexelsKey = (typeof CONFIG !== 'undefined' && CONFIG.PEXELS_API_KEY) || '';
+    if (!pexelsKey || pexelsKey.includes('your-')) throw new Error('PEXELS_API_KEY not set in config.js');
+    const results = [];
+    for (const s of scenes) {
+      const query = encodeURIComponent((lastOutput.tags || [s.title]).join(' '));
+      const r = await fetch(`https://api.pexels.com/v1/search?query=${query}&per_page=1&orientation=portrait`, {
+        headers: { 'Authorization': pexelsKey }
+      });
+      if (!r.ok) throw new Error('Pexels error ' + r.status);
+      const d = await r.json();
+      const photo = d.photos?.[0];
+      results.push({
+        scene_number: s.scene_number,
+        title: s.title,
+        url: photo?.src?.portrait || photo?.src?.large || null,
+        b64: null
+      });
     }
-    const data = await resp.json();
-    generatedImages = data.images;
-    renderImageCards(data.images);
+    generatedImages = results;
+    renderImageCards(results);
     return;
   }
 
@@ -1207,21 +1228,32 @@ async function generateImagesAPI() {
     const labelEl = document.getElementById('imgLabel' + i);
     if (labelEl) labelEl.textContent = `Scene ${scene.scene_number} — generating... (${i+1}/${scenes.length})`;
 
-    const resp = await fetch(backendUrl + '/generate-images', {
+    const openAIKey = (typeof CONFIG !== 'undefined' && CONFIG.OPENAI_API_KEY) || '';
+    if (!openAIKey || openAIKey.includes('your-')) throw new Error('OPENAI_API_KEY not set in config.js');
+    const dalleModel = imageProvider === 'dalle3' ? 'dall-e-3' : 'dall-e-2';
+    const dalleSize = imageProvider === 'dalle3' ? '1024x1792' : '512x512';
+    const resp = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openAIKey}` },
       body: JSON.stringify({
-        scenes: [{ scene_number: scene.scene_number, title: scene.title, visual_prompt: scene.visual_prompt }],
-        model: imageProvider,
-        tags: lastOutput.tags || []
+        model: dalleModel,
+        prompt: scene.visual_prompt,
+        n: 1,
+        size: dalleSize,
+        response_format: 'b64_json'
       })
     });
     if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ error: 'Image generation failed' }));
-      throw new Error(`Scene ${scene.scene_number}: ${err.error || 'error ' + resp.status}`);
+      const err = await resp.json().catch(() => ({ error: { message: 'Image generation failed' } }));
+      throw new Error(`Scene ${scene.scene_number}: ${err.error?.message || 'error ' + resp.status}`);
     }
-    const data = await resp.json();
-    const img = data.images[0];
+    const dalleData = await resp.json();
+    const img = {
+      scene_number: scene.scene_number,
+      title: scene.title,
+      b64: dalleData.data[0].b64_json,
+      url: null
+    };
     generatedImages.push(img);
 
     // Render this card immediately — don't wait for others
