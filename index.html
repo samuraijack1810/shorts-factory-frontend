@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shorts Factory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:#080A0F;--surface:#0F1118;--surface2:#161924;
+    --border:rgba(255,255,255,0.07);--border-active:rgba(255,255,255,0.18);
+    --accent:#E8FF47;--accent-dim:rgba(232,255,71,0.12);--accent-glow:rgba(232,255,71,0.25);
+    --text:#F0F0F0;--text-muted:#6B7280;--text-dim:#9CA3AF;
+    --red:#FF4D4D;--green:#4DFF9A;--blue:#47B4FF;--orange:#FF9A47;
+    --font-display:'Syne',sans-serif;--font-mono:'DM Mono',monospace;
+    --radius:10px;--radius-lg:16px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-display);min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(232,255,71,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(232,255,71,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  .app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 1.25rem 4rem;}
+  header{display:flex;align-items:center;justify-content:space-between;padding:1.5rem 0 2.5rem;border-bottom:1px solid var(--border);margin-bottom:2rem;}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo-mark{width:32px;height:32px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;}
+  .logo-mark svg{width:16px;height:16px;}
+  .logo-text{font-size:18px;font-weight:800;letter-spacing:-0.02em;}
+  .logo-text span{color:var(--accent);}
+  .status-badge{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);}
+  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  .section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem;transition:border-color 0.2s;}
+  .section:focus-within{border-color:var(--border-active);}
+  .section-label{font-size:10px;font-weight:600;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:1rem;font-family:var(--font-mono);}
+  .topic-wrap{position:relative;}
+  .topic-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 48px 14px 16px;font-size:15px;font-family:var(--font-display);color:var(--text);outline:none;transition:border-color 0.2s,box-shadow 0.2s;-webkit-appearance:none;}
+  .topic-input::placeholder{color:var(--text-muted);}
+  .topic-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);}
+  .random-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--accent-dim);border:1px solid rgba(232,255,71,0.2);border-radius:6px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--accent);font-size:14px;transition:background 0.15s;}
+  .random-btn:hover{background:var(--accent-glow);}
+  .options-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media(max-width:480px){.options-grid{grid-template-columns:1fr;}}
+  .opt-group label{display:block;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:5px;}
+  .opt-group select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:13px;font-family:var(--font-display);color:var(--text);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236B7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;transition:border-color 0.2s;}
+  .opt-group select:focus{border-color:var(--accent);outline:none;}
+
+  /* Master button */
+  .master-btn{width:100%;background:var(--accent);color:#080A0F;border:none;border-radius:var(--radius);padding:18px;font-size:16px;font-weight:800;font-family:var(--font-display);letter-spacing:0.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.2s,transform 0.1s;margin-bottom:0.75rem;}
+  .master-btn:hover:not(:disabled){opacity:0.9;}
+  .master-btn:active:not(:disabled){transform:scale(0.99);}
+  .master-btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .secondary-btn{width:100%;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:13px;font-weight:600;font-family:var(--font-display);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color 0.15s,color 0.15s;margin-bottom:1rem;}
+  .secondary-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+  .secondary-btn:disabled{opacity:0.3;cursor:not-allowed;}
+
+  /* Pipeline */
+  .pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:1rem;}
+  @media(max-width:500px){.pipeline{grid-template-columns:repeat(2,1fr);}}
+  .pipe-step{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center;transition:all 0.3s;}
+  .pipe-step.active{border-color:var(--accent);background:var(--accent-dim);}
+  .pipe-step.done{border-color:rgba(77,255,154,0.3);background:rgba(77,255,154,0.06);}
+  .pipe-step.error{border-color:rgba(255,77,77,0.3);background:rgba(255,77,77,0.06);}
+  .pipe-icon{font-size:16px;margin-bottom:4px;}
+  .pipe-name{font-size:11px;font-weight:600;color:var(--text-dim);}
+  .pipe-step.active .pipe-name{color:var(--accent);}
+  .pipe-step.done .pipe-name{color:var(--green);}
+  .pipe-step.error .pipe-name{color:var(--red);}
+  .pipe-status{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:2px;}
+
+  /* Progress */
+  .progress-wrap{margin-bottom:1rem;display:none;}
+  .progress-wrap.visible{display:block;}
+  .progress-label{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:6px;display:flex;justify-content:space-between;}
+  .progress-bar{height:3px;background:var(--surface2);border-radius:999px;overflow:hidden;}
+  .progress-bar-inner{height:100%;background:var(--accent);border-radius:999px;transition:width 0.5s ease;}
+
+  .error-box{background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.3);border-radius:var(--radius);padding:12px 16px;font-size:13px;color:#FF8080;font-family:var(--font-mono);margin-bottom:1rem;display:none;}
+  .error-box.visible{display:block;}
+
+  .output{display:none;}
+  .output.visible{display:block;}
+
+  .concept-card{background:var(--accent-dim);border:1px solid rgba(232,255,71,0.2);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem;}
+  .concept-label{font-size:10px;font-family:var(--font-mono);color:var(--accent);letter-spacing:0.08em;margin-bottom:6px;}
+  .concept-text{font-size:14px;font-weight:600;color:var(--text);line-height:1.5;}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.25rem;}
+  .tag{background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:3px 10px;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);}
+
+  /* Scene cards */
+  .scene-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;}
+  .scene-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface);cursor:pointer;user-select:none;}
+  .scene-num{background:var(--accent);color:#080A0F;width:22px;height:22px;border-radius:4px;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .scene-head-title{flex:1;font-size:13px;font-weight:600;color:var(--text);}
+  .scene-time{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);}
+  .scene-chevron{font-size:12px;color:var(--text-muted);transition:transform 0.2s;}
+  .scene-card.open .scene-chevron{transform:rotate(180deg);}
+  .scene-body{display:none;padding:14px;}
+  .scene-card.open .scene-body{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:500px){.scene-card.open .scene-body{grid-template-columns:1fr;}}
+  .scene-col-label{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em;margin-bottom:6px;}
+  .scene-vo{font-size:13px;color:var(--text);line-height:1.6;}
+  .scene-vp{font-size:12px;color:var(--text-dim);line-height:1.6;background:var(--surface);border-radius:6px;padding:10px;border:1px solid var(--border);}
+  .copy-btn-sm{margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:10px;font-family:var(--font-mono);color:var(--text-muted);cursor:pointer;transition:border-color 0.15s,color 0.15s;}
+  .copy-btn-sm:hover{border-color:var(--accent);color:var(--accent);}
+  .action-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:1.25rem;}
+  @media(max-width:400px){.action-row{grid-template-columns:1fr;}}
+  .action-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:12px;font-family:var(--font-mono);color:var(--text-dim);cursor:pointer;text-align:center;transition:border-color 0.15s,color 0.15s;}
+  .action-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* Voiceover */
+  .vo-controls{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:0.75rem;}
+  .blue-btn{background:var(--surface2);border:1px solid rgba(71,180,255,0.3);border-radius:var(--radius);padding:10px 16px;font-size:12px;font-family:var(--font-mono);color:var(--blue);cursor:pointer;white-space:nowrap;transition:background 0.15s;}
+  .blue-btn:hover:not(:disabled){background:rgba(71,180,255,0.08);}
+  .blue-btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .audio-player{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:none;align-items:center;gap:12px;}
+  .audio-player.visible{display:flex;}
+  .play-btn{width:36px;height:36px;background:var(--blue);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .play-btn svg{width:14px;height:14px;fill:#080A0F;}
+  .audio-info{flex:1;}
+  .audio-title{font-size:12px;font-weight:600;color:var(--text);}
+  .audio-sub{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:2px;}
+  .dl-btn{background:transparent;border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);cursor:pointer;transition:border-color 0.15s,color 0.15s;}
+  .dl-btn:hover{border-color:var(--blue);color:var(--blue);}
+
+  /* Images grid */
+  .images-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:0.75rem;}
+  .provider-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:border-color 0.15s,background 0.15s;text-align:center;}
+  .provider-card:hover{border-color:var(--border-active);}
+  .provider-card.active{border-color:var(--accent);background:var(--accent-dim);}
+  .prov-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;}
+  .provider-card.active .prov-name{color:var(--accent);}
+  .prov-cost{font-size:12px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:4px;}
+  .provider-card.active .prov-cost{color:var(--accent);}
+  .prov-tag{display:inline-block;font-size:10px;font-family:var(--font-mono);padding:2px 8px;border-radius:999px;background:var(--surface);color:var(--text-muted);}
+  .cost-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;text-align:center;}
+  .cost-item-label{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:4px;}
+  .cost-item-val{font-size:16px;font-weight:700;color:var(--text);}
+  @media(max-width:400px){#costGrid{grid-template-columns:1fr 1fr;}}
+  .provider-card.active .prov-tag{background:rgba(232,255,71,0.15);color:var(--accent);}
+  @media(max-width:500px){.images-grid{grid-template-columns:repeat(2,1fr);}}
+  .img-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface2);aspect-ratio:9/16;position:relative;}
+  .img-card img{width:100%;height:100%;object-fit:cover;display:block;}
+  .img-card-label{position:absolute;bottom:0;left:0;right:0;background:rgba(8,10,15,0.85);padding:6px 8px;font-size:10px;font-family:var(--font-mono);color:var(--text-muted);}
+  .img-generating{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;}
+  .img-spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .img-gen-label{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);}
+  .img-refresh-btn{position:absolute;top:6px;right:6px;background:rgba(8,10,15,0.75);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:4px 8px;font-size:10px;font-family:var(--font-mono);color:var(--text-dim);cursor:pointer;transition:border-color 0.15s,color 0.15s;z-index:2;}
+  .img-refresh-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .img-refresh-btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .upload-slot{border:1.5px dashed var(--border-active);border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;transition:border-color 0.15s,background 0.15s;background:var(--surface2);position:relative;}
+  .upload-slot:hover{border-color:var(--accent);background:var(--accent-dim);}
+  .upload-slot.filled{border-style:solid;border-color:rgba(77,255,154,0.4);background:rgba(77,255,154,0.05);}
+  .upload-slot-preview{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:6px;display:block;margin-bottom:6px;}
+  .upload-slot-label{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);}
+  .upload-slot.filled .upload-slot-label{color:var(--green);}
+  .upload-slot-icon{font-size:20px;margin-bottom:6px;}
+  .upload-slot-name{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:3px;word-break:break-all;}
+  .upload-clear-btn{position:absolute;top:6px;right:6px;background:rgba(8,10,15,0.75);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 7px;font-size:10px;font-family:var(--font-mono);color:var(--text-dim);cursor:pointer;}
+  .upload-clear-btn:hover{border-color:var(--red);color:var(--red);}
+
+  /* Video output */
+  .video-output{margin-top:0.75rem;display:none;}
+  .video-output.visible{display:block;}
+  .video-wrap{background:var(--surface2);border:1px solid rgba(77,255,154,0.3);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:14px;}
+  .video-icon{width:44px;height:44px;background:rgba(77,255,154,0.1);border:1px solid rgba(77,255,154,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .video-info{flex:1;}
+  .video-title{font-size:13px;font-weight:600;color:var(--green);}
+  .video-sub{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-top:3px;}
+  .dl-video-btn{background:rgba(77,255,154,0.1);border:1px solid rgba(77,255,154,0.3);border-radius:6px;padding:8px 16px;font-size:12px;font-family:var(--font-mono);color:var(--green);cursor:pointer;transition:background 0.15s;white-space:nowrap;}
+  .dl-video-btn:hover{background:rgba(77,255,154,0.2);}
+
+  /* Backend notice */
+  .backend-notice{background:rgba(71,180,255,0.06);border:1px solid rgba(71,180,255,0.2);border-radius:var(--radius);padding:12px 14px;font-size:12px;font-family:var(--font-mono);color:#7CC5F0;margin-bottom:1rem;line-height:1.6;}
+  .backend-url-row{display:flex;gap:8px;margin-top:8px;}
+  .backend-url-input{flex:1;background:var(--surface2);border:1px solid rgba(71,180,255,0.3);border-radius:6px;padding:8px 12px;font-size:12px;font-family:var(--font-mono);color:var(--text);outline:none;}
+  .backend-url-input:focus{border-color:var(--blue);}
+  .save-url-btn{background:rgba(71,180,255,0.1);border:1px solid rgba(71,180,255,0.3);border-radius:6px;padding:8px 14px;font-size:12px;font-family:var(--font-mono);color:var(--blue);cursor:pointer;}
+  .save-url-btn:hover{background:rgba(71,180,255,0.18);}
+
+  footer{text-align:center;padding:2rem 0 1rem;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);border-top:1px solid var(--border);margin-top:2rem;}
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 16 16" fill="none"><polygon points="3,2 13,8 3,14" fill="#080A0F"/></svg>
+      </div>
+      <div class="logo-text">Shorts<span>Factory</span></div>
+    </div>
+    <div class="status-badge"><div class="status-dot"></div>ready</div>
+  </header>
+
+  <!-- Backend config -->
+  <div class="backend-notice" id="backendNotice">
+    ⚙ Connect your backend to enable voiceover, image generation and video assembly.
+    <div class="backend-url-row">
+      <input type="text" class="backend-url-input" id="backendUrl" placeholder="https://your-app.onrender.com" />
+      <button class="save-url-btn" onclick="saveBackendUrl()">Save</button>
+    </div>
+  </div>
+  <!-- Local assembler notice -->
+  <div style="background:rgba(77,255,154,0.06);border:1px solid rgba(77,255,154,0.2);border-radius:var(--radius);padding:10px 14px;font-size:12px;font-family:var(--font-mono);color:#4DFF9A;margin-bottom:1rem;" id="localNotice">
+    ⚡ Local assembler: <span id="localStatus" style="color:var(--text-muted);">not detected — video assembly will use Render</span>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Run <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">npm start</code> in the local-assembler folder to enable fast Ken Burns assembly on your PC</div>
+  </div>
+
+  <!-- Topic -->
+  <div class="section">
+    <div class="section-label">TOPIC</div>
+    <div class="topic-wrap">
+      <input type="text" class="topic-input" id="topicInput" placeholder="e.g. The mantis shrimp can see 16 types of colour" />
+      <button class="random-btn" onclick="setRandom()" title="Random topic">↺</button>
+    </div>
+  </div>
+
+  <!-- Options -->
+  <div class="section">
+    <div class="section-label">OPTIONS</div>
+    <div class="options-grid">
+      <div class="opt-group"><label>CATEGORY</label>
+        <select id="catSelect">
+          <option value="science">Science & space</option>
+          <option value="history">Obscure history</option>
+          <option value="mystery">Unsolved mystery</option>
+          <option value="nature">Nature & animals</option>
+          <option value="tech">Technology</option>
+          <option value="psychology">Psychology</option>
+        </select>
+      </div>
+      <div class="opt-group"><label>DURATION</label>
+        <select id="durSelect" onchange="updateSceneRecommendation()">
+          <option value="30">~30 seconds</option>
+          <option value="45" selected>~45 seconds</option>
+          <option value="60">~60 seconds</option>
+        </select>
+      </div>
+      <div class="opt-group"><label>TONE</label>
+        <select id="toneSelect">
+          <option value="mind-blowing">Mind-blowing</option>
+          <option value="eerie">Eerie / unsettling</option>
+          <option value="darkly funny">Darkly funny</option>
+          <option value="wonder">Sense of wonder</option>
+        </select>
+      </div>
+      <div class="opt-group"><label>NICHE</label>
+        <select id="nicheSelect">
+          <option value="general curiosity">General curiosity</option>
+          <option value="space & cosmos">Space & cosmos</option>
+          <option value="life on Earth">Life on Earth</option>
+          <option value="human nature">Human nature</option>
+        </select>
+      </div>
+      <div class="opt-group"><label>SCENES</label>
+        <select id="sceneCount" onchange="updateCostSummary()">
+          <option value="3">3 scenes</option>
+          <option value="4" selected>4 scenes</option>
+          <option value="5">5 scenes</option>
+          <option value="6">6 scenes</option>
+        </select>
+      </div>
+      <div class="opt-group"><label>IMAGE SOURCE</label>
+        <select id="providerSelect" onchange="updateCostSummary()">
+          <option value="dalle3">DALL-E 3 ($0.04/img)</option>
+          <option value="dalle2">DALL-E 2 ($0.005/img)</option>
+          <option value="pexels">Pexels (free)</option>
+          <option value="upload">Upload my photos (free)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Live cost summary -->
+    <div id="costSummary" style="margin-top:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;">
+      <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em;margin-bottom:8px;">ESTIMATED COST PER VIDEO</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;" id="costGrid">
+        <div class="cost-item"><div class="cost-item-label">Script</div><div class="cost-item-val" id="cScript">$0.02</div></div>
+        <div class="cost-item"><div class="cost-item-label">Voiceover</div><div class="cost-item-val" id="cVoice">$0.02</div></div>
+        <div class="cost-item"><div class="cost-item-label">Images</div><div class="cost-item-val" id="cImages">$0.16</div></div>
+        <div class="cost-item" style="border-color:rgba(232,255,71,0.3);background:var(--accent-dim);">
+          <div class="cost-item-label" style="color:var(--accent);">Total</div>
+          <div class="cost-item-val" style="color:var(--accent);" id="cTotal">$0.20</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Master button -->
+  <button class="master-btn" id="masterBtn" onclick="runFullPipeline()">
+    <span id="masterBtnLabel">Generate everything →</span>
+  </button>
+
+  <!-- Manual script only -->
+  <button class="secondary-btn" id="scriptOnlyBtn" onclick="generateScriptOnly()">
+    Script only (review before generating images)
+  </button>
+
+  <!-- Load existing script -->
+  <button class="secondary-btn" id="loadScriptBtn" onclick="document.getElementById('loadFileInput').click()" style="border-color:rgba(71,180,255,0.3);color:var(--blue);">
+    ↑ Load saved script (JSON)
+  </button>
+  <input type="file" id="loadFileInput" accept=".json" style="display:none;" onchange="loadScriptFromFile(event)" />
+
+  <!-- Pipeline tracker -->
+  <div class="pipeline">
+    <div class="pipe-step" id="pipe1"><div class="pipe-icon">📝</div><div class="pipe-name">Script</div><div class="pipe-status" id="pipe1s">waiting</div></div>
+    <div class="pipe-step" id="pipe2"><div class="pipe-icon">🎙</div><div class="pipe-name">Voiceover</div><div class="pipe-status" id="pipe2s">waiting</div></div>
+    <div class="pipe-step" id="pipe3"><div class="pipe-icon">🖼</div><div class="pipe-name">Images</div><div class="pipe-status" id="pipe3s">waiting</div></div>
+    <div class="pipe-step" id="pipe4"><div class="pipe-icon">🎬</div><div class="pipe-name">Video</div><div class="pipe-status" id="pipe4s">waiting</div></div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label"><span id="progressMsg">Starting...</span><span id="progressPct">0%</span></div>
+    <div class="progress-bar"><div class="progress-bar-inner" id="progressBar" style="width:0%"></div></div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Output -->
+  <div class="output" id="outputArea">
+
+    <!-- Hook -->
+    <div class="concept-card">
+      <div class="concept-label">OPENING HOOK</div>
+      <div class="concept-text" id="hookText"></div>
+    </div>
+    <div class="tags" id="tagsRow"></div>
+
+    <!-- Scene breakdown -->
+    <div class="section">
+      <div class="section-label">SCENE BREAKDOWN</div>
+      <div id="scenesContainer"></div>
+      <div class="action-row" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+        <button class="action-btn" onclick="copyJson()">Copy JSON</button>
+        <button class="action-btn" onclick="copyScript()">Copy voiceover</button>
+        <button class="action-btn" onclick="downloadJson()" style="border-color:rgba(71,180,255,0.3);color:var(--blue);">↓ Save JSON</button>
+        <button class="action-btn" onclick="downloadTxt()" style="border-color:rgba(71,180,255,0.3);color:var(--blue);">↓ Save TXT</button>
+      </div>
+    </div>
+
+    <!-- Voiceover -->
+    <div class="section" id="voSection">
+      <div class="section-label">VOICEOVER — ELEVENLABS</div>
+      <div class="vo-controls">
+        <div class="opt-group">
+          <label>VOICE</label>
+          <select id="voiceSelect">
+            <option value="Rachel">Rachel (calm, clear)</option>
+            <option value="Adam">Adam (deep, authoritative)</option>
+            <option value="Bella">Bella (warm, engaging)</option>
+            <option value="Antoni">Antoni (energetic, fast)</option>
+            <option value="Josh">Josh (documentary style)</option>
+          </select>
+        </div>
+        <button class="blue-btn" id="voBtn" onclick="generateVoiceover()">Generate voiceover →</button>
+      </div>
+      <div class="audio-player" id="audioPlayer">
+        <button class="play-btn" id="playBtn" onclick="togglePlay()">
+          <svg id="playIcon" viewBox="0 0 16 16"><polygon points="4,2 14,8 4,14"/></svg>
+        </button>
+        <div class="audio-info">
+          <div class="audio-title" id="audioTitle">Voiceover ready</div>
+          <div class="audio-sub" id="audioSub">ElevenLabs · ready to download</div>
+          <div id="audioFilename" style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:2px;"></div>
+        </div>
+        <button class="dl-btn" id="dlAudioBtn">↓ MP3</button>
+      </div>
+    </div>
+
+    <!-- Scene images -->
+    <div class="section" id="imagesSection">
+      <div class="section-label">SCENE IMAGES</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem;">
+        <div class="provider-card active" id="prov-dalle3" onclick="selectProvider('dalle3')">
+          <div class="prov-name">DALL-E 3</div>
+          <div class="prov-cost">$0.16 / video</div>
+          <div class="prov-tag">Best quality</div>
+        </div>
+        <div class="provider-card" id="prov-dalle2" onclick="selectProvider('dalle2')">
+          <div class="prov-name">DALL-E 2</div>
+          <div class="prov-cost">$0.02 / video</div>
+          <div class="prov-tag">Lower quality</div>
+        </div>
+        <div class="provider-card" id="prov-pexels" onclick="selectProvider('pexels')">
+          <div class="prov-name">Pexels</div>
+          <div class="prov-cost">Free</div>
+          <div class="prov-tag">Real photos</div>
+        </div>
+        <div class="provider-card" id="prov-upload" onclick="selectProvider('upload')">
+          <div class="prov-name">Upload</div>
+          <div class="prov-cost">Free</div>
+          <div class="prov-tag">Your photos</div>
+        </div>
+      </div>
+
+      <!-- Upload slots — shown when Upload provider selected -->
+      <div id="uploadSlotsWrap" style="display:none;margin-bottom:0.75rem;">
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:8px;">Upload one image per scene — JPG, PNG or WEBP, any size</div>
+        <div id="uploadSlots" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;"></div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+        <span style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);" id="imgCostLabel">~$0.04 per image · 4 scenes = ~$0.16</span>
+        <button class="blue-btn" id="imagesBtn" onclick="generateImages()" style="border-color:rgba(232,255,71,0.3);color:var(--accent);">Generate images →</button>
+      </div>
+      <div class="images-grid" id="imagesGrid"></div>
+      <div id="dlImagesRow" style="display:none;margin-top:0.75rem;">
+        <button class="action-btn" onclick="downloadAllImages()" style="width:100%;border-color:rgba(71,180,255,0.3);color:var(--blue);">↓ Download all images as ZIP</button>
+        <div id="dlIndividualImages" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px;"></div>
+      </div>
+    </div>
+
+    <!-- Video assembly -->
+    <div class="section" id="assemblySection">
+      <div class="section-label">VIDEO ASSEMBLY — FFMPEG</div>
+      <p style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:1rem;">Once voiceover and images are ready, assemble the final 720×1280 MP4 with one click.</p>
+      <button class="master-btn" id="assembleBtn" onclick="assembleVideo()" style="margin-bottom:0;" disabled>
+        <span id="assembleBtnLabel">Assemble video →</span>
+      </button>
+      <div class="video-output" id="videoOutput">
+        <div class="video-wrap">
+          <div class="video-icon">🎬</div>
+          <div class="video-info">
+            <div class="video-title" id="videoTitle">Video ready!</div>
+            <div class="video-sub" id="videoSub">720×1280 · MP4 · ready to upload</div>
+            <div id="videoFilename" style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:3px;word-break:break-all;"></div>
+          </div>
+          <button class="dl-video-btn" id="dlVideoBtn">↓ Download MP4</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>shorts factory · claude + elevenlabs + dall-e 3 + ffmpeg</footer>
+</div>
+
+<audio id="audioEl" style="display:none;"></audio>
+
+<script>
+// All API keys are stored securely on the backend
+
+const RANDOM_TOPICS = [
+  "The mantis shrimp can see 16 types of colour — humans only see 3",
+  "A day on Venus is longer than a year on Venus",
+  "Cleopatra lived closer in time to the Moon landing than to the pyramids being built",
+  "Tardigrades can survive in the vacuum of space for 10 days",
+  "There are more possible games of chess than atoms in the observable universe",
+  "The woolly mammoth was still alive when the Great Pyramid was built",
+  "You share 50% of your DNA with a banana",
+  "Neutron stars are so dense a teaspoon would weigh a billion tons",
+  "The longest echo ever recorded lasted 112 seconds",
+  "Sharks are older than trees — they've existed for 450 million years"
+];
+
+let lastOutput = null;
+let audioBlob = null;
+let audioB64 = null;
+let generatedImages = [];
+let pexelsPageMap = {};  // tracks which page each scene is on for refresh
+let imageProvider = 'dalle3';
+
+// ─── Cost & scene helpers ─────────────────────
+const IMG_COSTS = { dalle3: 0.04, dalle2: 0.005, pexels: 0, upload: 0 };
+const VOICE_COST = 0.017;
+const SCRIPT_COST = 0.02;
+
+function updateCostSummary() {
+  const scenes = parseInt(document.getElementById('sceneCount').value);
+  const provider = document.getElementById('providerSelect').value;
+  imageProvider = provider;
+
+  // Sync provider cards if visible
+  ['dalle3','dalle2','pexels'].forEach(id => {
+    const card = document.getElementById('prov-' + id);
+    if (card) card.classList.toggle('active', id === provider);
+  });
+  // pexelsKeyWrap removed — Pexels key lives on backend
+
+  const imgCost = IMG_COSTS[provider] * scenes;
+  const total = SCRIPT_COST + VOICE_COST + imgCost;
+
+  document.getElementById('cScript').textContent = '$' + SCRIPT_COST.toFixed(2);
+  document.getElementById('cVoice').textContent = '$' + VOICE_COST.toFixed(3);
+  document.getElementById('cImages').textContent = provider === 'pexels' ? 'Free' : '$' + imgCost.toFixed(3);
+  document.getElementById('cTotal').textContent = provider === 'pexels' ? '$' + (SCRIPT_COST + VOICE_COST).toFixed(3) : '$' + total.toFixed(3);
+
+  // Update inline cost label in images section if visible
+  const imgLabel = document.getElementById('imgCostLabel');
+  if (imgLabel) {
+    if (provider === 'pexels') {
+      imgLabel.textContent = 'Free — real photos from Pexels';
+    } else {
+      imgLabel.textContent = `$${IMG_COSTS[provider].toFixed(3)} per image · ${scenes} scenes = ~$${imgCost.toFixed(3)}`;
+    }
+  }
+
+  // Update images grid columns
+  const grid = document.getElementById('imagesGrid');
+  if (grid) {
+    grid.style.gridTemplateColumns = scenes <= 4 ? 'repeat(2,1fr)' : 'repeat(3,1fr)';
+  }
+}
+
+// ─── Upload provider ─────────────────────────
+let uploadedImages = {}; // { sceneIndex: { b64, filename } }
+
+function buildUploadSlots() {
+  if (!lastOutput) return;
+  const container = document.getElementById('uploadSlots');
+  container.innerHTML = lastOutput.scenes.map((s, i) => `
+    <div class="upload-slot ${uploadedImages[i] ? 'filled' : ''}" id="uploadSlot${i}" onclick="triggerUpload(${i})">
+      ${uploadedImages[i] ? `
+        <img class="upload-slot-preview" src="data:image/png;base64,${uploadedImages[i].b64}" />
+        <button class="upload-clear-btn" onclick="clearUpload(event,${i})">✕</button>
+        <div class="upload-slot-label">✓ Uploaded</div>
+        <div class="upload-slot-name">${uploadedImages[i].filename}</div>
+      ` : `
+        <div class="upload-slot-icon">↑</div>
+        <div class="upload-slot-label">Scene ${s.scene_number}</div>
+        <div class="upload-slot-name">${s.title}</div>
+      `}
+      <input type="file" id="uploadInput${i}" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="handleUpload(event,${i})" />
+    </div>`).join('');
+}
+
+function triggerUpload(index) {
+  document.getElementById('uploadInput' + index)?.click();
+}
+
+function handleUpload(event, index) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const b64 = e.target.result.split(',')[1];
+    uploadedImages[index] = { b64, filename: file.name };
+    buildUploadSlots();
+    // Also update generatedImages so assembly picks it up
+    if (lastOutput?.scenes[index]) {
+      const scene = lastOutput.scenes[index];
+      generatedImages[index] = { scene_number: scene.scene_number, title: scene.title, b64, url: null };
+    }
+    checkAssembleReady();
+    updateImageDownloadButtons();
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function clearUpload(event, index) {
+  event.stopPropagation();
+  delete uploadedImages[index];
+  if (generatedImages[index]) {
+    generatedImages[index] = null;
+    generatedImages = generatedImages.filter(Boolean);
+  }
+  buildUploadSlots();
+  checkAssembleReady();
+  updateImageDownloadButtons();
+}
+
+function getUploadReadyCount() {
+  return Object.keys(uploadedImages).length;
+}
+
+function updateSceneRecommendation() {
+  const dur = parseInt(document.getElementById('durSelect').value);
+  const sceneSelect = document.getElementById('sceneCount');
+  // Recommend scene count based on duration
+  if (dur <= 30) sceneSelect.value = '3';
+  else if (dur <= 45) sceneSelect.value = '4';
+  else sceneSelect.value = '5';
+  updateCostSummary();
+}
+
+// Sync provider card click back to dropdown
+function selectProvider(p) {
+  imageProvider = p;
+  document.getElementById('providerSelect').value = p;
+  updateCostSummary();
+}
+let backendUrl = localStorage.getItem('backendUrl') || '';
+const LOCAL_ASSEMBLER = 'http://localhost:3001';
+let localAssemblerAvailable = false;
+
+window.onload = () => {
+  if (backendUrl) {
+    document.getElementById('backendUrl').value = backendUrl;
+    document.getElementById('backendNotice').style.display = 'none';
+  }
+  updateCostSummary();
+  startKeepAlive();
+  checkLocalAssembler();
+};
+
+async function checkLocalAssembler() {
+  try {
+    const resp = await fetch(LOCAL_ASSEMBLER + '/health', { signal: AbortSignal.timeout(2000) });
+    const data = await resp.json();
+    if (data.assembler === 'local') {
+      localAssemblerAvailable = true;
+      document.getElementById('localStatus').textContent = 'connected — videos will assemble on your PC with Ken Burns effect';
+      document.getElementById('localStatus').style.color = '#4DFF9A';
+    }
+  } catch(e) {
+    localAssemblerAvailable = false;
+  }
+  // Re-check every 30 seconds in case user starts local server later
+  setTimeout(checkLocalAssembler, 30000);
+}
+
+function startKeepAlive() {
+  if (!backendUrl) return;
+  // Ping every 10 minutes to prevent Render free tier from sleeping
+  setInterval(async () => {
+    try {
+      await fetch(backendUrl + '/health');
+      console.log('[keep-alive] ping sent:', new Date().toLocaleTimeString());
+    } catch(e) {
+      console.warn('[keep-alive] ping failed:', e.message);
+    }
+  }, 10 * 60 * 1000);
+}
+
+function saveBackendUrl() {
+  backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+  localStorage.setItem('backendUrl', backendUrl);
+  document.getElementById('backendNotice').style.display = 'none';
+  startKeepAlive();
+}
+
+function setRandom() {
+  document.getElementById('topicInput').value = RANDOM_TOPICS[Math.floor(Math.random() * RANDOM_TOPICS.length)];
+}
+
+function setPipe(n, state) {
+  const el = document.getElementById('pipe' + n);
+  el.className = 'pipe-step' + (state !== 'idle' ? ' ' + state : '');
+  const labels = { idle: 'waiting', active: 'processing...', done: 'complete', error: 'failed' };
+  document.getElementById('pipe' + n + 's').textContent = labels[state] || state;
+}
+
+function setProgress(pct, msg) {
+  document.getElementById('progressWrap').classList.add('visible');
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = Math.round(pct) + '%';
+  if (msg) document.getElementById('progressMsg').textContent = msg;
+}
+
+function hideProgress() {
+  document.getElementById('progressWrap').classList.remove('visible');
+}
+
+function showError(msg) {
+  const eb = document.getElementById('errorBox');
+  eb.textContent = '✕ ' + msg;
+  eb.classList.add('visible');
+}
+
+function hideError() {
+  document.getElementById('errorBox').classList.remove('visible');
+}
+
+function lockButtons(locked) {
+  document.getElementById('masterBtn').disabled = locked;
+  document.getElementById('scriptOnlyBtn').disabled = locked;
+  document.getElementById('masterBtnLabel').textContent = locked ? 'Generating...' : 'Generate everything →';
+}
+
+// ─── Full pipeline ───────────────────────────
+async function runFullPipeline() {
+  const topic = document.getElementById('topicInput').value.trim();
+  if (!topic) { highlightInput(); return; }
+  if (!backendUrl) { showError('Please save your backend URL first.'); return; }
+
+  lockButtons(true);
+  hideError();
+  document.getElementById('outputArea').classList.remove('visible');
+  [1,2,3,4].forEach(n => setPipe(n, 'idle'));
+
+  try {
+    // Step 1: Script
+    setProgress(5, 'Generating script...');
+    setPipe(1, 'active');
+    lastOutput = await generateScriptAPI();
+    setPipe(1, 'done');
+    renderOutput(lastOutput);
+    setProgress(20, 'Script done — generating voiceover...');
+
+    // Step 2: Voiceover
+    setPipe(2, 'active');
+    await generateVoiceoverAPI();
+    setPipe(2, 'done');
+    setProgress(40, 'Voiceover done — generating scene images...');
+
+    // Step 3: Images
+    setPipe(3, 'active');
+    await generateImagesAPI();
+    setPipe(3, 'done');
+    setProgress(75, 'Images done — assembling video...');
+
+    // Step 4: Assemble
+    setPipe(4, 'active');
+    await assembleVideoAPI();
+    setPipe(4, 'done');
+    setProgress(100, 'Complete!');
+    setTimeout(hideProgress, 2000);
+
+  } catch(e) {
+    showError(e.message);
+  } finally {
+    lockButtons(false);
+  }
+}
+
+// ─── Script only ─────────────────────────────
+async function generateScriptOnly() {
+  const topic = document.getElementById('topicInput').value.trim();
+  if (!topic) { highlightInput(); return; }
+
+  lockButtons(true);
+  hideError();
+  document.getElementById('outputArea').classList.remove('visible');
+  setPipe(1, 'active');
+  setProgress(10, 'Generating script...');
+
+  try {
+    lastOutput = await generateScriptAPI();
+    setPipe(1, 'done');
+    renderOutput(lastOutput);
+    setProgress(100, 'Script ready');
+    setTimeout(hideProgress, 1500);
+  } catch(e) {
+    setPipe(1, 'error');
+    showError(e.message);
+  } finally {
+    lockButtons(false);
+  }
+}
+
+// ─── Script API call ─────────────────────────
+async function generateScriptAPI() {
+  const cat = document.getElementById('catSelect').value;
+  const dur = document.getElementById('durSelect').value;
+  const tone = document.getElementById('toneSelect').value;
+  const niche = document.getElementById('nicheSelect').value;
+  const topic = document.getElementById('topicInput').value.trim();
+  const sceneCount = document.getElementById('sceneCount').value;
+
+  const systemPrompt = `You are a viral short-form video creator. Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
+{"title":"string","hook_stat":"string","total_duration":number,"scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5}],"full_voiceover_script":"string","cta_line":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}`;
+
+  const userPrompt = `Create a ${dur}-second ${tone} YouTube/Instagram Shorts script about: "${topic}"
+Category: ${cat}. Niche: ${niche}.
+Rules:
+- Scene 1: strong 3-4s scroll-stopping hook
+- Exactly ${sceneCount} scenes, each ${Math.round(parseInt(dur)/sceneCount)}-${Math.round(parseInt(dur)/sceneCount)+4} seconds, include duration_seconds for each
+- Fast punchy narration, slightly breathless
+- Final scene: clever subscribe CTA
+- Visual prompts: cinematic, hyper-realistic, 9:16 vertical, no text in frame, mobile safe zones
+- full_voiceover_script: all voiceover lines as one continuous paragraph`;
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': CLAUDE_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 2000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || 'Claude API error ' + resp.status);
+  }
+
+  const data = await resp.json();
+  const raw = data.content.map(b => b.text || '').join('');
+  const clean = raw.replace(/```json|```/g, '').trim();
+  return JSON.parse(clean);
+}
+
+// ─── Voiceover API call ───────────────────────
+async function generateVoiceover() {
+  if (!lastOutput) return;
+  document.getElementById('voBtn').disabled = true;
+  document.getElementById('voBtn').textContent = 'Generating...';
+  setPipe(2, 'active');
+  try {
+    await generateVoiceoverAPI();
+    setPipe(2, 'done');
+    checkAssembleReady();
+  } catch(e) {
+    setPipe(2, 'error');
+    showError('Voiceover: ' + e.message);
+  } finally {
+    document.getElementById('voBtn').disabled = false;
+    document.getElementById('voBtn').textContent = 'Generate voiceover →';
+  }
+}
+
+async function generateVoiceoverAPI() {
+  const voice = document.getElementById('voiceSelect').value;
+  const resp = await fetch(backendUrl + '/voiceover', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: lastOutput.full_voiceover_script, voice })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ error: 'Voiceover failed' }));
+    throw new Error(err.error || 'Voiceover error ' + resp.status);
+  }
+
+  audioBlob = await resp.blob();
+  // Also store as base64 for auto-assembly
+  audioB64 = await blobToB64(audioBlob);
+
+  const url = URL.createObjectURL(audioBlob);
+  const audioFilename = `${projectName()}_voiceover.mp3`;
+  document.getElementById('audioEl').src = url;
+  document.getElementById('audioTitle').textContent = lastOutput.title || 'Voiceover';
+  document.getElementById('audioSub').textContent = `ElevenLabs · ${voice} · ready`;
+  document.getElementById('audioFilename').textContent = audioFilename;
+  document.getElementById('dlAudioBtn').textContent = '↓ ' + audioFilename;
+  document.getElementById('audioPlayer').classList.add('visible');
+  document.getElementById('dlAudioBtn').onclick = () => {
+    const a = document.createElement('a'); a.href = url; a.download = audioFilename; a.click();
+  };
+}
+
+// ─── Images API call ─────────────────────────
+async function generateImages() {
+  if (!lastOutput) return;
+
+  // Upload mode — validate all slots filled
+  if (imageProvider === 'upload') {
+    const count = getUploadReadyCount();
+    const needed = lastOutput.scenes.length;
+    if (count < needed) {
+      showError(`Please upload images for all ${needed} scenes. ${count} of ${needed} uploaded.`);
+      return;
+    }
+    // generatedImages already populated by handleUpload
+    setPipe(3, 'done');
+    checkAssembleReady();
+    updateImageDownloadButtons();
+    return;
+  }
+
+  document.getElementById('imagesBtn').disabled = true;
+  document.getElementById('imagesBtn').textContent = 'Generating...';
+  setPipe(3, 'active');
+  try {
+    await generateImagesAPI();
+    setPipe(3, 'done');
+    checkAssembleReady();
+  } catch(e) {
+    setPipe(3, 'error');
+    showError('Images: ' + e.message);
+  } finally {
+    document.getElementById('imagesBtn').disabled = false;
+    document.getElementById('imagesBtn').textContent = imageProvider === 'upload' ? 'Use uploaded images →' : 'Generate images →';
+  }
+}
+
+// ─── Provider selection ──────────────────────
+function selectProvider(p) {
+  imageProvider = p;
+  ['dalle3','dalle2','pexels','upload'].forEach(id => {
+    const el = document.getElementById('prov-' + id);
+    if (el) el.classList.toggle('active', id === p);
+  });
+  // Show/hide upload slots
+  const uploadWrap = document.getElementById('uploadSlotsWrap');
+  if (uploadWrap) uploadWrap.style.display = p === 'upload' ? 'block' : 'none';
+  if (p === 'upload' && lastOutput) buildUploadSlots();
+  // Update generate button label
+  const imagesBtn = document.getElementById('imagesBtn');
+  if (imagesBtn) imagesBtn.textContent = p === 'upload' ? 'Use uploaded images →' : 'Generate images →';
+  const labels = {
+    dalle3: '~$0.04 per image · 4 scenes = ~$0.16',
+    dalle2: '~$0.005 per image · 4 scenes = ~$0.02',
+    pexels: 'Free — real photos from Pexels',
+    upload: 'Free — your own images'
+  };
+  const imgLabel = document.getElementById('imgCostLabel');
+  if (imgLabel) imgLabel.textContent = labels[p] || '';
+  const sel = document.getElementById('providerSelect');
+  if (sel) sel.value = p;
+  updateCostSummary();
+}
+
+async function generateImagesAPI() {
+  const grid = document.getElementById('imagesGrid');
+  const scenes = lastOutput.scenes;
+  generatedImages = [];
+
+  // Show all placeholders upfront
+  grid.innerHTML = scenes.map((s, i) => `
+    <div class="img-card" id="imgCard${i}">
+      <div class="img-generating">
+        <div class="img-spinner"></div>
+        <div class="img-gen-label" id="imgLabel${i}">Scene ${s.scene_number} — waiting...</div>
+      </div>
+      <div class="img-card-label">Scene ${s.scene_number}: ${s.title}</div>
+    </div>`).join('');
+
+  // For Pexels — still fast enough to batch
+  if (imageProvider === 'pexels') {
+    const resp = await fetch(backendUrl + '/generate-images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scenes: scenes.map(s => ({ scene_number: s.scene_number, title: s.title, visual_prompt: s.visual_prompt })),
+        model: 'pexels',
+        tags: lastOutput.tags || []
+      })
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: 'Image generation failed' }));
+      throw new Error(err.error || 'Pexels error ' + resp.status);
+    }
+    const data = await resp.json();
+    generatedImages = data.images;
+    renderImageCards(data.images);
+    return;
+  }
+
+  // For DALL-E — generate one at a time so cards fill in progressively
+  for (let i = 0; i < scenes.length; i++) {
+    const scene = scenes[i];
+    const labelEl = document.getElementById('imgLabel' + i);
+    if (labelEl) labelEl.textContent = `Scene ${scene.scene_number} — generating... (${i+1}/${scenes.length})`;
+
+    const resp = await fetch(backendUrl + '/generate-images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scenes: [{ scene_number: scene.scene_number, title: scene.title, visual_prompt: scene.visual_prompt }],
+        model: imageProvider,
+        tags: lastOutput.tags || []
+      })
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: 'Image generation failed' }));
+      throw new Error(`Scene ${scene.scene_number}: ${err.error || 'error ' + resp.status}`);
+    }
+    const data = await resp.json();
+    const img = data.images[0];
+    generatedImages.push(img);
+
+    // Render this card immediately — don't wait for others
+    const card = document.getElementById('imgCard' + i);
+    if (card) {
+      card.innerHTML = `
+        <img src="data:image/png;base64,${img.b64}" alt="Scene ${img.scene_number}" loading="lazy" />
+        <button class="img-refresh-btn" onclick="refreshImage(${i})">↺ regenerate</button>
+        <div class="img-card-label">Scene ${img.scene_number}: ${img.title}</div>`;
+    }
+
+    // Update progress
+    setProgress(40 + Math.round((i + 1) / scenes.length * 35), `Image ${i+1} of ${scenes.length} done...`);
+  }
+}
+
+function renderImageCards(images) {
+  const isPexels = imageProvider === 'pexels';
+  const refreshLabel = isPexels ? '↺ new photo' : '↺ regenerate';
+
+  images.forEach((img, i) => {
+    const card = document.getElementById('imgCard' + i);
+    if (!card) return;
+    if (img.b64) {
+      card.innerHTML = `
+        <img src="data:image/png;base64,${img.b64}" alt="Scene ${img.scene_number}" loading="lazy" />
+        <button class="img-refresh-btn" onclick="refreshImage(${i})">${refreshLabel}</button>
+        <div class="img-card-label">Scene ${img.scene_number}: ${img.title}</div>`;
+    } else if (img.url) {
+      card.innerHTML = `
+        <img src="${img.url}" alt="Scene ${img.scene_number}" loading="lazy" crossorigin="anonymous" />
+        <button class="img-refresh-btn" onclick="refreshImage(${i})">${refreshLabel}</button>
+        <div class="img-card-label">Scene ${img.scene_number}: ${img.title}</div>`;
+    }
+  });
+
+  // Render individual download buttons
+  updateImageDownloadButtons();
+}
+
+function updateImageDownloadButtons() {
+  const row = document.getElementById('dlImagesRow');
+  const container = document.getElementById('dlIndividualImages');
+  if (!generatedImages.length) { row.style.display = 'none'; return; }
+  row.style.display = 'block';
+
+  container.innerHTML = generatedImages.map((img, i) => {
+    const fname = `${projectName()}_scene${img.scene_number}_${img.title.replace(/[^a-z0-9]+/gi,'_').toLowerCase()}.png`;
+    return `<button class="action-btn" onclick="downloadImage(${i})" style="font-size:10px;padding:8px;border-color:rgba(71,180,255,0.2);color:var(--text-muted);">↓ Scene ${img.scene_number}: ${img.title}</button>`;
+  }).join('');
+}
+
+async function downloadImage(index) {
+  const img = generatedImages[index];
+  if (!img) return;
+  const fname = `${projectName()}_scene${img.scene_number}_${img.title.replace(/[^a-z0-9]+/gi,'_').toLowerCase()}.png`;
+
+  if (img.b64) {
+    const a = document.createElement('a');
+    a.href = 'data:image/png;base64,' + img.b64;
+    a.download = fname;
+    a.click();
+  } else if (img.url) {
+    // Fetch and download Pexels URL
+    try {
+      const resp = await fetch(img.url);
+      const blob = await resp.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fname;
+      a.click();
+    } catch(e) {
+      // Fallback — open in new tab
+      window.open(img.url, '_blank');
+    }
+  }
+}
+
+async function downloadAllImages() {
+  // Download one by one with short delay — simple approach without zip library
+  for (let i = 0; i < generatedImages.length; i++) {
+    await downloadImage(i);
+    await new Promise(r => setTimeout(r, 400));
+  }
+}
+
+// ─── Pexels (client-side, no backend needed) ─
+async function fetchPexelsImages(apiKey) {
+  pexelsPageMap = {}; // reset page tracking on full regenerate
+  const results = [];
+  for (const scene of lastOutput.scenes) {
+    const photo = await fetchOnePexelsPhoto(apiKey, scene, 1);
+    pexelsPageMap[scene.scene_number] = 1;
+    results.push({ scene_number: scene.scene_number, title: scene.title, url: photo.src.portrait, b64: null });
+  }
+  return { images: results };
+}
+
+function buildPexelsQuery(scene) {
+  // Extract meaningful visual keywords from the visual prompt
+  // Strip cinematic/technical terms that confuse Pexels
+  const stripWords = [
+    'cinematic','hyper-realistic','vertical','9:16','composition','depth of field',
+    'camera','shot','slow','dramatic','lighting','style','photography','oriented',
+    'frame','aspect ratio','centered','portrait','horizontal','bokeh','lens',
+    'transition','split-screen','effect','visualization','time-lapse','pulling',
+    'pushing','orbiting','godray','rimlight','detail','quality','resolution',
+    'foreground','background','middle','upper','lower','thirds','area'
+  ];
+  const prompt = scene.visual_prompt || '';
+  // Pull out key nouns from the visual prompt
+  const words = prompt.toLowerCase()
+    .replace(/[^a-z\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 3 && !stripWords.includes(w));
+
+  // Always include all topic tags as primary keywords
+  const tags = (lastOutput.tags || []).slice(0, 3);
+
+  // Deduplicate and take top keywords
+  const combined = [...new Set([...tags, ...words])].slice(0, 5);
+  return encodeURIComponent(combined.join(' '));
+}
+
+async function fetchOnePexelsPhoto(apiKey, scene, page) {
+  // Try specific query first, fall back to tags-only if no results
+  const specificQuery = buildPexelsQuery(scene);
+  const fallbackQuery = encodeURIComponent((lastOutput.tags || []).join(' ') || scene.title);
+
+  for (const query of [specificQuery, fallbackQuery]) {
+    const resp = await fetch(
+      `https://api.pexels.com/v1/search?query=${query}&orientation=portrait&per_page=15&page=${page}`,
+      { headers: { Authorization: apiKey } }
+    );
+    if (!resp.ok) throw new Error('Pexels API error ' + resp.status + ' — check your API key.');
+    const data = await resp.json();
+    const photos = data.photos || [];
+    if (photos.length) {
+      // Pick randomly from results for variety
+      return photos[Math.floor(Math.random() * photos.length)];
+    }
+  }
+  throw new Error(`No Pexels photos found for scene ${scene.scene_number}. Try DALL-E instead.`);
+}
+
+// ─── Refresh single image ─────────────────────
+async function refreshImage(index) {
+  if (!lastOutput) return;
+  const scene = lastOutput.scenes[index];
+  const card = document.getElementById('imgCard' + index);
+  const btn = card?.querySelector('.img-refresh-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  try {
+    // All refresh calls go through backend — no client-side keys needed
+    if (imageProvider === 'pexels') {
+      pexelsPageMap[scene.scene_number] = (pexelsPageMap[scene.scene_number] || 1) + 1;
+    } else {
+      card.innerHTML = `<div class="img-generating"><div class="img-spinner"></div><div class="img-gen-label">Regenerating...</div></div><div class="img-card-label">Scene ${scene.scene_number}: ${scene.title}</div>`;
+    }
+    const resp = await fetch(backendUrl + '/refresh-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scene: { scene_number: scene.scene_number, title: scene.title, visual_prompt: scene.visual_prompt },
+        tags: lastOutput.tags || [],
+        model: imageProvider,
+        page: pexelsPageMap[scene.scene_number] || 1
+      })
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: 'Failed' }));
+      throw new Error(err.error || 'Refresh error');
+    }
+    const data = await resp.json();
+    const img = data.image;
+    generatedImages[index] = img;
+    const refreshLabel = imageProvider === 'pexels' ? '↺ new photo' : '↺ regenerate';
+    if (img.b64) {
+      card.innerHTML = `
+        <img src="data:image/png;base64,${img.b64}" alt="Scene ${scene.scene_number}" loading="lazy" />
+        <button class="img-refresh-btn" onclick="refreshImage(${index})">${refreshLabel}</button>
+        <div class="img-card-label">Scene ${scene.scene_number}: ${scene.title}</div>`;
+    } else if (img.url) {
+      card.innerHTML = `
+        <img src="${img.url}" alt="Scene ${scene.scene_number}" loading="lazy" crossorigin="anonymous" />
+        <button class="img-refresh-btn" onclick="refreshImage(${index})">${refreshLabel}</button>
+        <div class="img-card-label">Scene ${scene.scene_number}: ${scene.title}</div>`;
+    }
+  } catch(e) {
+    showError('Refresh failed: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = imageProvider === 'pexels' ? '↺ new photo' : '↺ regenerate'; }
+  }
+}
+
+// ─── Assembly ────────────────────────────────
+async function assembleVideo() {
+  if (!audioB64 || !generatedImages.length) return;
+  document.getElementById('assembleBtn').disabled = true;
+  document.getElementById('assembleBtnLabel').textContent = 'Assembling...';
+  setPipe(4, 'active');
+  setProgress(80, 'Assembling video...');
+  try {
+    await assembleVideoAPI();
+    setPipe(4, 'done');
+    setProgress(100, 'Video ready!');
+    setTimeout(hideProgress, 2000);
+  } catch(e) {
+    setPipe(4, 'error');
+    showError('Assembly: ' + e.message);
+    hideProgress();
+  } finally {
+    document.getElementById('assembleBtn').disabled = false;
+    document.getElementById('assembleBtnLabel').textContent = 'Assemble video →';
+  }
+}
+
+async function assembleVideoAPI() {
+  const durations = lastOutput.scenes.map(s => s.duration_seconds || (lastOutput.total_duration / lastOutput.scenes.length));
+
+  const assembleUrl = localAssemblerAvailable ? LOCAL_ASSEMBLER : backendUrl;
+  console.log(`[assemble] Using: ${localAssemblerAvailable ? 'LOCAL PC' : 'Render backend'}`);
+
+  const resp = await fetch(assembleUrl + '/assemble-auto', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      images: generatedImages.map(img => ({ scene_number: img.scene_number, b64: img.b64 || null, url: img.url || null })),
+      audioB64,
+      durations,
+      title: lastOutput.title || 'shorts_video'
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ error: 'Assembly failed' }));
+    throw new Error(err.error || 'Assembly error ' + resp.status);
+  }
+
+  const videoBlob = await resp.blob();
+  const url = URL.createObjectURL(videoBlob);
+  const safeTitle = (lastOutput.title || 'video').replace(/[^a-z0-9]+/gi, '_').toLowerCase();
+  const filename = `${safeTitle}_${lastOutput.total_duration}s.mp4`;
+
+  document.getElementById('videoTitle').textContent = lastOutput.title || 'Video ready!';
+  document.getElementById('videoSub').textContent = `720×1280 · MP4 · ${lastOutput.total_duration}s · ${lastOutput.scenes.length} scenes`;
+  document.getElementById('videoFilename').textContent = filename;
+  document.getElementById('dlVideoBtn').textContent = '↓ ' + filename;
+  document.getElementById('dlVideoBtn').onclick = () => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+  };
+  document.getElementById('videoOutput').classList.add('visible');
+}
+
+// ─── Helpers ─────────────────────────────────
+function checkAssembleReady() {
+  const ready = audioB64 && generatedImages.length > 0;
+  document.getElementById('assembleBtn').disabled = !ready;
+}
+
+function blobToB64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function projectName() {
+  // Consistent filename prefix for all files in this project
+  return (lastOutput?.title || 'shorts_video')
+    .replace(/[^a-z0-9]+/gi, '_')
+    .toLowerCase()
+    .replace(/^_+|_+$/g, '');
+}
+
+function highlightInput() {
+  const inp = document.getElementById('topicInput');
+  inp.focus(); inp.style.borderColor = 'var(--red)';
+  setTimeout(() => inp.style.borderColor = '', 1500);
+}
+
+function renderOutput(out) {
+  document.getElementById('hookText').textContent = out.hook_stat;
+  document.getElementById('tagsRow').innerHTML = (out.tags||[]).map(t => `<span class="tag">#${t}</span>`).join('');
+
+  const sc = document.getElementById('scenesContainer');
+  sc.innerHTML = '';
+  out.scenes.forEach((s, i) => {
+    const card = document.createElement('div');
+    card.className = 'scene-card' + (i === 0 ? ' open' : '');
+    const vp = s.visual_prompt.replace(/`/g,'\\`').replace(/'/g,"\\'");
+    card.innerHTML = `
+      <div class="scene-head" onclick="toggleScene(this)">
+        <div class="scene-num">${s.scene_number}</div>
+        <div class="scene-head-title">${s.title}</div>
+        <div class="scene-time">${s.time_start} – ${s.time_end}</div>
+        <div class="scene-chevron">▼</div>
+      </div>
+      <div class="scene-body">
+        <div>
+          <div class="scene-col-label">VOICEOVER</div>
+          <div class="scene-vo">${s.voiceover}</div>
+        </div>
+        <div>
+          <div class="scene-col-label">VISUAL PROMPT</div>
+          <div class="scene-vp">${s.visual_prompt}</div>
+          <button class="copy-btn-sm" onclick="copyText(this,'${vp}')">copy prompt</button>
+        </div>
+      </div>`;
+    sc.appendChild(card);
+  });
+
+  // Pre-build image placeholders in grid
+  document.getElementById('imagesGrid').innerHTML = out.scenes.map(s =>
+    `<div class="img-card"><div class="img-generating"><div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">Scene ${s.scene_number}</div></div><div class="img-card-label">${s.title}</div></div>`
+  ).join('');
+
+  document.getElementById('outputArea').classList.add('visible');
+  document.getElementById('outputArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Reset uploads for new script
+  uploadedImages = {};
+  if (imageProvider === 'upload') buildUploadSlots();
+}
+
+function toggleScene(head) { head.parentElement.classList.toggle('open'); }
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).catch(() => {});
+  const o = btn.textContent; btn.textContent = 'copied!';
+  setTimeout(() => btn.textContent = o, 2000);
+}
+
+function copyJson() {
+  if (!lastOutput) return;
+  navigator.clipboard.writeText(JSON.stringify(lastOutput, null, 2)).catch(() => {});
+}
+
+function copyScript() {
+  if (!lastOutput) return;
+  const lines = lastOutput.scenes.map(s => `[${s.time_start}-${s.time_end}] ${s.voiceover}`).join('\n\n');
+  navigator.clipboard.writeText(lines).catch(() => {});
+}
+
+function downloadJson() {
+  if (!lastOutput) return;
+  const blob = new Blob([JSON.stringify(lastOutput, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `script_${(lastOutput.title || 'shorts').replace(/\s+/g,'_').toLowerCase()}_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function downloadTxt() {
+  if (!lastOutput) return;
+  const lines = [
+    `SHORTS FACTORY — SCRIPT`,
+    `Generated: ${new Date().toLocaleDateString()}`,
+    ``,
+    `TITLE: ${lastOutput.title}`,
+    `DURATION: ${lastOutput.total_duration}s`,
+    `TAGS: ${(lastOutput.tags||[]).map(t => '#'+t).join(' ')}`,
+    ``,
+    `HOOK: ${lastOutput.hook_stat}`,
+    ``,
+    `─────────────────────────────────`,
+    `FULL VOICEOVER SCRIPT`,
+    `─────────────────────────────────`,
+    ``,
+    lastOutput.full_voiceover_script,
+    ``,
+    `─────────────────────────────────`,
+    `SCENE BREAKDOWN`,
+    `─────────────────────────────────`,
+    ``,
+    ...lastOutput.scenes.flatMap(s => [
+      `Scene ${s.scene_number}: ${s.title} [${s.time_start}–${s.time_end}]`,
+      `Voiceover: ${s.voiceover}`,
+      `Visual prompt: ${s.visual_prompt}`,
+      ``
+    ]),
+    `─────────────────────────────────`,
+    `CTA: ${lastOutput.cta_line}`
+  ].join('\n');
+
+  const blob = new Blob([lines], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `script_${(lastOutput.title || 'shorts').replace(/\s+/g,'_').toLowerCase()}_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+}
+
+function loadScriptFromFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!parsed.scenes || !parsed.full_voiceover_script) {
+        showError('Invalid script file — make sure it was saved from Shorts Factory.');
+        return;
+      }
+      lastOutput = parsed;
+      hideError();
+
+      // Sync scene count dropdown to match loaded script
+      const sceneCount = parsed.scenes.length.toString();
+      const sceneSelect = document.getElementById('sceneCount');
+      // Add option dynamically if count not in list (e.g. 6 scenes)
+      if (sceneSelect) {
+        if (![...sceneSelect.options].some(o => o.value === sceneCount)) {
+          const opt = document.createElement('option');
+          opt.value = sceneCount;
+          opt.textContent = sceneCount + ' scenes';
+          sceneSelect.appendChild(opt);
+        }
+        sceneSelect.value = sceneCount;
+      }
+
+      // Sync duration dropdown to match loaded script
+      const dur = parsed.total_duration?.toString();
+      const durSelect = document.getElementById('durSelect');
+      if (durSelect && dur) {
+        if (![...durSelect.options].some(o => o.value === dur)) {
+          const opt = document.createElement('option');
+          opt.value = dur;
+          opt.textContent = '~' + dur + ' seconds';
+          durSelect.appendChild(opt);
+        }
+        durSelect.value = dur;
+      }
+
+      // Recalculate cost with loaded script's scene count
+      updateCostSummary();
+
+      renderOutput(lastOutput);
+      setPipe(1, 'done');
+      document.getElementById('outputArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch(err) {
+      showError('Could not read file — make sure it is a valid JSON file.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function togglePlay() {
+  const el = document.getElementById('audioEl');
+  const icon = document.getElementById('playIcon');
+  if (el.paused) {
+    el.play();
+    icon.innerHTML = '<rect x="4" y="2" width="3" height="12"/><rect x="9" y="2" width="3" height="12"/>';
+  } else {
+    el.pause();
+    icon.innerHTML = '<polygon points="4,2 14,8 4,14"/>';
+  }
+  el.onended = () => { icon.innerHTML = '<polygon points="4,2 14,8 4,14"/>'; };
+}
+</script>
+</body>
+</html>
