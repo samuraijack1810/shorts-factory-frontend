@@ -420,7 +420,31 @@
     <!-- Video assembly -->
     <div class="section" id="assemblySection">
       <div class="section-label">VIDEO ASSEMBLY — FFMPEG</div>
-      <p style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:1rem;">Once voiceover and images are ready, assemble the final 720×1280 MP4 with one click.</p>
+      <p style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:0.75rem;">Once voiceover and images are ready, assemble the final 720×1280 MP4 with one click.</p>
+
+      <!-- Motion mode selector -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:8px;">MOTION STYLE</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+          <div class="provider-card active" id="motion-mixed" onclick="selectMotion('mixed')">
+            <div class="prov-name">Mixed</div>
+            <div class="prov-cost">Recommended</div>
+            <div class="prov-tag">zoom + static</div>
+          </div>
+          <div class="provider-card" id="motion-zoom" onclick="selectMotion('zoom')">
+            <div class="prov-name">All zoom</div>
+            <div class="prov-cost">Ken Burns</div>
+            <div class="prov-tag">every scene</div>
+          </div>
+          <div class="provider-card" id="motion-static" onclick="selectMotion('static')">
+            <div class="prov-name">All static</div>
+            <div class="prov-cost">Fastest</div>
+            <div class="prov-tag">no movement</div>
+          </div>
+        </div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-top:6px;" id="motionDesc">Mixed: hook scene zooms in, CTA stays static, middle scenes alternate — smooth crossfade between all scenes</div>
+      </div>
+
       <button class="master-btn" id="assembleBtn" onclick="assembleVideo()" style="margin-bottom:0;" disabled>
         <span id="assembleBtnLabel">Assemble video →</span>
       </button>
@@ -466,6 +490,7 @@ let audioB64 = null;
 let generatedImages = [];
 let pexelsPageMap = {};  // tracks which page each scene is on for refresh
 let imageProvider = 'dalle3';
+let motionMode = 'mixed';
 
 // ─── Cost & scene helpers ─────────────────────
 const IMG_COSTS = { dalle3: 0.04, dalle2: 0.005, pexels: 0, upload: 0 };
@@ -569,6 +594,21 @@ function clearUpload(event, index) {
 
 function getUploadReadyCount() {
   return Object.keys(uploadedImages).length;
+}
+
+function selectMotion(mode) {
+  motionMode = mode;
+  ['mixed','zoom','static'].forEach(m => {
+    const el = document.getElementById('motion-' + m);
+    if (el) el.classList.toggle('active', m === mode);
+  });
+  const descs = {
+    mixed: 'Mixed: hook scene zooms in, CTA stays static, middle scenes alternate — smooth crossfade between all scenes',
+    zoom: 'All zoom: every scene gets a slow Ken Burns zoom — great for dramatic topics',
+    static: 'All static: clean still cuts with crossfade — fastest assembly, minimal distraction'
+  };
+  const el = document.getElementById('motionDesc');
+  if (el) el.textContent = descs[mode];
 }
 
 function updateSceneRecommendation() {
@@ -1192,7 +1232,8 @@ async function assembleVideoAPI() {
       images: generatedImages.map(img => ({ scene_number: img.scene_number, b64: img.b64 || null, url: img.url || null })),
       audioB64,
       durations,
-      title: lastOutput.title || 'shorts_video'
+      title: lastOutput.title || 'shorts_video',
+      motionMode
     })
   });
 
