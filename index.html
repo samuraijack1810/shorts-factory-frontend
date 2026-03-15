@@ -300,6 +300,20 @@
     Script only (review before generating images)
   </button>
 
+  <!-- Fact check -->
+  <button class="secondary-btn" id="factCheckBtn" onclick="runFactCheck()" style="display:none;border-color:rgba(255,154,71,0.4);color:var(--orange);">
+    🔬 Fact-check this script →
+  </button>
+
+  <!-- Fact check results -->
+  <div id="factCheckResult" style="display:none;background:rgba(255,154,71,0.08);border:1px solid rgba(255,154,71,0.3);border-radius:var(--radius);padding:14px;margin-bottom:1rem;">
+    <div style="font-size:10px;font-family:var(--font-mono);color:var(--orange);letter-spacing:0.08em;margin-bottom:8px;">FACT CHECK RESULTS</div>
+    <div id="factCheckContent" style="font-size:13px;color:var(--text-dim);line-height:1.7;"></div>
+    <button class="secondary-btn" id="applyFactsBtn" onclick="applyFactCheckedScript()" style="margin-top:0.75rem;border-color:rgba(77,255,154,0.3);color:var(--green);display:none;">
+      ✓ Apply corrections to script
+    </button>
+  </div>
+
   <!-- Load existing script -->
   <button class="secondary-btn" id="loadScriptBtn" onclick="document.getElementById('loadFileInput').click()" style="border-color:rgba(71,180,255,0.3);color:var(--blue);">
     ↑ Load saved script (JSON)
@@ -922,11 +936,13 @@ async function generateScriptAPI() {
   const userPrompt = `Create a ${dur}-second ${tone} YouTube/Instagram Shorts script about: "${topic}"
 Category: ${cat}. Niche: ${niche}.
 Rules:
-- Scene 1: strong 3-4s scroll-stopping hook
-- Exactly ${sceneCount} scenes, each ${Math.round(parseInt(dur)/sceneCount)}-${Math.round(parseInt(dur)/sceneCount)+4} seconds, include duration_seconds for each
-- Fast punchy narration, slightly breathless
-- Final scene: clever subscribe CTA
+- Exactly ${sceneCount} scenes, keep each scene to 2-4 seconds max — short-form audiences need fast visual cuts
+- Scene 1: punchy 2-3s scroll-stopping hook, no longer
+- Every factual claim must be 100% scientifically accurate — double check numbers, temperatures, dates
+- Fast breathless narration — no filler words
+- Final scene: clever subscribe CTA (2s max)
 - Visual prompts: cinematic, hyper-realistic, 9:16 vertical, no text in frame, mobile safe zones
+- duration_seconds: must reflect actual scene length (2-4s typically)
 - full_voiceover_script: all voiceover lines as one continuous paragraph`;
 
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -954,6 +970,89 @@ Rules:
   const raw = data.content.map(b => b.text || '').join('');
   const clean = raw.replace(/```json|```/g, '').trim();
   return JSON.parse(clean);
+}
+
+// ─── Fact check ──────────────────────────────
+let factCheckedScript = null;
+
+async function runFactCheck() {
+  if (!lastOutput) return;
+  const btn = document.getElementById('factCheckBtn');
+  btn.disabled = true;
+  btn.textContent = '🔬 Checking facts...';
+
+  const resultBox = document.getElementById('factCheckResult');
+  const resultContent = document.getElementById('factCheckContent');
+  resultBox.style.display = 'block';
+  resultContent.innerHTML = '<em>Analysing every factual claim...</em>';
+
+  try {
+    const voiceover = lastOutput.full_voiceover_script;
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': CLAUDE_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1500,
+        system: `You are a rigorous science fact-checker. Analyse the voiceover script for factual errors. 
+Output ONLY a JSON object: {"has_errors": boolean, "issues": [{"claim": "exact quote", "error": "what is wrong", "correction": "correct version"}], "corrected_script": "full corrected voiceover script"}
+If no errors found, set has_errors to false, issues to empty array, and corrected_script to the original.`,
+        messages: [{ role: 'user', content: `Fact-check this short-form video voiceover:
+
+"${voiceover}"` }]
+      })
+    });
+
+    if (!resp.ok) throw new Error('Fact-check API error');
+    const data = await resp.json();
+    const raw = data.content.map(b => b.text || '').join('').replace(/```json|```/g, '').trim();
+    const result = JSON.parse(raw);
+
+    if (!result.has_errors) {
+      resultContent.innerHTML = '<span style="color:var(--green);">✓ No factual errors found — script looks accurate!</span>';
+      document.getElementById('applyFactsBtn').style.display = 'none';
+    } else {
+      let html = '';
+      result.issues.forEach(issue => {
+        html += `<div style="margin-bottom:12px;padding:10px;background:rgba(255,77,77,0.08);border-radius:6px;border-left:2px solid rgba(255,77,77,0.4);">
+          <div style="font-size:11px;font-family:var(--font-mono);color:#FF8080;margin-bottom:4px;">ISSUE</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">"${issue.claim}"</div>
+          <div style="font-size:12px;color:#FF8080;margin-bottom:4px;">✕ ${issue.error}</div>
+          <div style="font-size:12px;color:var(--green);">✓ ${issue.correction}</div>
+        </div>`;
+      });
+      resultContent.innerHTML = html;
+      factCheckedScript = result.corrected_script;
+      document.getElementById('applyFactsBtn').style.display = 'block';
+    }
+
+  } catch(e) {
+    resultContent.innerHTML = `<span style="color:var(--red);">Error: ${e.message}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔬 Fact-check this script →';
+  }
+}
+
+function applyFactCheckedScript() {
+  if (!factCheckedScript || !lastOutput) return;
+  lastOutput.full_voiceover_script = factCheckedScript;
+
+  // Also update scene voiceovers proportionally
+  // Just update the full script — individual scene voiceovers need manual review
+  const btn = document.getElementById('applyFactsBtn');
+  btn.textContent = '✓ Corrections applied';
+  btn.disabled = true;
+  btn.style.background = 'rgba(77,255,154,0.1)';
+
+  // Show notification
+  const content = document.getElementById('factCheckContent');
+  content.innerHTML += '<div style="margin-top:10px;padding:8px 10px;background:rgba(77,255,154,0.08);border-radius:6px;font-size:12px;color:var(--green);">✓ Full voiceover script updated. Re-generate voiceover to apply changes.</div>';
 }
 
 // ─── Voiceover API call ───────────────────────
@@ -1459,6 +1558,11 @@ function renderOutput(out) {
   // Reset uploads for new script
   uploadedImages = {};
   if (imageProvider === 'upload') buildUploadSlots();
+  // Show fact-check button, reset previous results
+  document.getElementById('factCheckBtn').style.display = 'block';
+  document.getElementById('factCheckResult').style.display = 'none';
+  document.getElementById('applyFactsBtn').style.display = 'none';
+  factCheckedScript = null;
 }
 
 function toggleScene(head) { head.parentElement.classList.toggle('open'); }
