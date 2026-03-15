@@ -412,7 +412,7 @@
       </div>
       <div class="images-grid" id="imagesGrid"></div>
       <div id="dlImagesRow" style="display:none;margin-top:0.75rem;">
-        <button class="action-btn" onclick="downloadAllImages()" style="width:100%;border-color:rgba(71,180,255,0.3);color:var(--blue);">↓ Download all images as ZIP</button>
+        <button class="action-btn" onclick="downloadAllImages()" style="width:100%;border-color:rgba(71,180,255,0.3);color:var(--blue);">↓ Download all images</button>
         <div id="dlIndividualImages" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px;"></div>
       </div>
     </div>
@@ -443,6 +443,20 @@
           </div>
         </div>
         <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-top:6px;" id="motionDesc">Mixed: hook scene zooms in, CTA stays static, middle scenes alternate — smooth crossfade between all scenes</div>
+      </div>
+
+      <!-- Text overlay toggle -->
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:1rem;">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">Voiceover subtitles</div>
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-top:2px;">Burns voiceover text onto each scene at the bottom</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);" id="textToggleLabel">ON</span>
+          <div style="position:relative;width:40px;height:22px;background:var(--accent);border-radius:999px;transition:background 0.2s;cursor:pointer;" id="textToggleTrack" onclick="toggleTextOverlay()">
+            <div style="position:absolute;top:3px;left:20px;width:16px;height:16px;background:#080A0F;border-radius:50%;transition:left 0.2s;" id="textToggleThumb"></div>
+          </div>
+        </label>
       </div>
 
       <button class="master-btn" id="assembleBtn" onclick="assembleVideo()" style="margin-bottom:0;" disabled>
@@ -491,6 +505,7 @@ let generatedImages = [];
 let pexelsPageMap = {};  // tracks which page each scene is on for refresh
 let imageProvider = 'dalle3';
 let motionMode = 'mixed';
+let showTextOverlay = true;
 
 // ─── Cost & scene helpers ─────────────────────
 const IMG_COSTS = { dalle3: 0.04, dalle2: 0.005, pexels: 0, upload: 0 };
@@ -609,6 +624,22 @@ function selectMotion(mode) {
   };
   const el = document.getElementById('motionDesc');
   if (el) el.textContent = descs[mode];
+}
+
+function toggleTextOverlay() {
+  showTextOverlay = !showTextOverlay;
+  const track = document.getElementById('textToggleTrack');
+  const thumb = document.getElementById('textToggleThumb');
+  const label = document.getElementById('textToggleLabel');
+  if (showTextOverlay) {
+    track.style.background = 'var(--accent)';
+    thumb.style.left = '20px';
+    label.textContent = 'ON';
+  } else {
+    track.style.background = 'var(--surface2)';
+    thumb.style.left = '3px';
+    label.textContent = 'OFF';
+  }
 }
 
 function updateSceneRecommendation() {
@@ -1042,22 +1073,31 @@ function renderImageCards(images) {
   updateImageDownloadButtons();
 }
 
+function imageFilename(index) {
+  // Naming: script_name(1).png, script_name(2).png etc.
+  return `${projectName()}(${index + 1}).png`;
+}
+
 function updateImageDownloadButtons() {
   const row = document.getElementById('dlImagesRow');
   const container = document.getElementById('dlIndividualImages');
   if (!generatedImages.length) { row.style.display = 'none'; return; }
   row.style.display = 'block';
 
+  // Update "Download all" button label
+  const dlAllBtn = row.querySelector('button');
+  if (dlAllBtn) dlAllBtn.textContent = `↓ Download all ${generatedImages.length} images`;
+
   container.innerHTML = generatedImages.map((img, i) => {
-    const fname = `${projectName()}_scene${img.scene_number}_${img.title.replace(/[^a-z0-9]+/gi,'_').toLowerCase()}.png`;
-    return `<button class="action-btn" onclick="downloadImage(${i})" style="font-size:10px;padding:8px;border-color:rgba(71,180,255,0.2);color:var(--text-muted);">↓ Scene ${img.scene_number}: ${img.title}</button>`;
+    const fname = imageFilename(i);
+    return `<button class="action-btn" onclick="downloadImage(${i})" style="font-size:10px;padding:8px;border-color:rgba(71,180,255,0.2);color:var(--text-muted);" title="${fname}">↓ ${fname}</button>`;
   }).join('');
 }
 
 async function downloadImage(index) {
   const img = generatedImages[index];
   if (!img) return;
-  const fname = `${projectName()}_scene${img.scene_number}_${img.title.replace(/[^a-z0-9]+/gi,'_').toLowerCase()}.png`;
+  const fname = imageFilename(index);
 
   if (img.b64) {
     const a = document.createElement('a');
@@ -1065,7 +1105,6 @@ async function downloadImage(index) {
     a.download = fname;
     a.click();
   } else if (img.url) {
-    // Fetch and download Pexels URL
     try {
       const resp = await fetch(img.url);
       const blob = await resp.blob();
@@ -1074,14 +1113,12 @@ async function downloadImage(index) {
       a.download = fname;
       a.click();
     } catch(e) {
-      // Fallback — open in new tab
       window.open(img.url, '_blank');
     }
   }
 }
 
 async function downloadAllImages() {
-  // Download one by one with short delay — simple approach without zip library
   for (let i = 0; i < generatedImages.length; i++) {
     await downloadImage(i);
     await new Promise(r => setTimeout(r, 400));
@@ -1233,7 +1270,9 @@ async function assembleVideoAPI() {
       audioB64,
       durations,
       title: lastOutput.title || 'shorts_video',
-      motionMode
+      motionMode,
+      showText: showTextOverlay,
+      scenes: lastOutput.scenes.map(s => ({ voiceover: s.voiceover, title: s.title }))
     })
   });
 
