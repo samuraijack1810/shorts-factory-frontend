@@ -347,27 +347,57 @@
 
     <!-- Voiceover -->
     <div class="section" id="voSection">
-      <div class="section-label">VOICEOVER — ELEVENLABS</div>
-      <div class="vo-controls">
-        <div class="opt-group">
-          <label>VOICE</label>
-          <select id="voiceSelect">
-            <option value="Rachel">Rachel (calm, clear)</option>
-            <option value="Adam">Adam (deep, authoritative)</option>
-            <option value="Bella">Bella (warm, engaging)</option>
-            <option value="Antoni">Antoni (energetic, fast)</option>
-            <option value="Josh">Josh (documentary style)</option>
-          </select>
+      <div class="section-label">VOICEOVER</div>
+
+      <!-- Source toggle -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;">
+        <div class="provider-card active" id="voSource-elevenlabs" onclick="selectVoSource('elevenlabs')">
+          <div class="prov-name">ElevenLabs</div>
+          <div class="prov-cost">AI generated</div>
+          <div class="prov-tag">$5/mo</div>
         </div>
-        <button class="blue-btn" id="voBtn" onclick="generateVoiceover()">Generate voiceover →</button>
+        <div class="provider-card" id="voSource-upload" onclick="selectVoSource('upload')">
+          <div class="prov-name">Upload</div>
+          <div class="prov-cost">Your own file</div>
+          <div class="prov-tag">MP3 / WAV / M4A</div>
+        </div>
       </div>
-      <div class="audio-player" id="audioPlayer">
+
+      <!-- ElevenLabs panel -->
+      <div id="voElevenLabsPanel">
+        <div class="vo-controls">
+          <div class="opt-group">
+            <label>VOICE</label>
+            <select id="voiceSelect">
+              <option value="Rachel">Rachel (calm, clear)</option>
+              <option value="Adam">Adam (deep, authoritative)</option>
+              <option value="Bella">Bella (warm, engaging)</option>
+              <option value="Antoni">Antoni (energetic, fast)</option>
+              <option value="Josh">Josh (documentary style)</option>
+            </select>
+          </div>
+          <button class="blue-btn" id="voBtn" onclick="generateVoiceover()">Generate voiceover →</button>
+        </div>
+      </div>
+
+      <!-- Upload panel -->
+      <div id="voUploadPanel" style="display:none;">
+        <div class="upload-slot" onclick="document.getElementById('voFileInput').click()" id="voUploadSlot" style="aspect-ratio:unset;padding:20px;text-align:center;">
+          <div class="upload-slot-icon">🎙</div>
+          <div class="upload-slot-label">Click to upload your voiceover</div>
+          <div class="upload-slot-name">MP3, WAV, M4A — any length</div>
+        </div>
+        <input type="file" id="voFileInput" accept="audio/mp3,audio/mpeg,audio/wav,audio/m4a,audio/x-m4a,audio/*" style="display:none;" onchange="handleVoUpload(event)" />
+      </div>
+
+      <!-- Audio player — shared between both sources -->
+      <div class="audio-player" id="audioPlayer" style="margin-top:0.75rem;">
         <button class="play-btn" id="playBtn" onclick="togglePlay()">
           <svg id="playIcon" viewBox="0 0 16 16"><polygon points="4,2 14,8 4,14"/></svg>
         </button>
         <div class="audio-info">
           <div class="audio-title" id="audioTitle">Voiceover ready</div>
-          <div class="audio-sub" id="audioSub">ElevenLabs · ready to download</div>
+          <div class="audio-sub" id="audioSub">ready to use</div>
           <div id="audioFilename" style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:2px;"></div>
         </div>
         <button class="dl-btn" id="dlAudioBtn">↓ MP3</button>
@@ -506,6 +536,7 @@ let pexelsPageMap = {};  // tracks which page each scene is on for refresh
 let imageProvider = 'dalle3';
 let motionMode = 'mixed';
 let showTextOverlay = true;
+let voSource = 'elevenlabs';
 
 // ─── Cost & scene helpers ─────────────────────
 const IMG_COSTS = { dalle3: 0.04, dalle2: 0.005, pexels: 0, upload: 0 };
@@ -640,6 +671,65 @@ function toggleTextOverlay() {
     thumb.style.left = '3px';
     label.textContent = 'OFF';
   }
+}
+
+function selectVoSource(src) {
+  voSource = src;
+  ['elevenlabs','upload'].forEach(s => {
+    const el = document.getElementById('voSource-' + s);
+    if (el) el.classList.toggle('active', s === src);
+  });
+  document.getElementById('voElevenLabsPanel').style.display = src === 'elevenlabs' ? 'block' : 'none';
+  document.getElementById('voUploadPanel').style.display = src === 'upload' ? 'block' : 'none';
+  // Hide audio player when switching source until new audio loaded
+  if (src === 'upload') {
+    document.getElementById('audioPlayer').classList.remove('visible');
+  }
+}
+
+function handleVoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    // Store as blob for playback and b64 for assembly
+    audioBlob = new Blob([e.target.result], { type: file.type });
+    const url = URL.createObjectURL(audioBlob);
+
+    // Convert to b64 for backend assembly
+    const b64reader = new FileReader();
+    b64reader.onload = (e2) => {
+      audioB64 = e2.target.result.split(',')[1];
+    };
+    b64reader.readAsDataURL(audioBlob);
+
+    // Setup audio player
+    document.getElementById('audioEl').src = url;
+    document.getElementById('audioTitle').textContent = file.name.replace(/\.[^.]+$/, '');
+    document.getElementById('audioSub').textContent = `Uploaded · ${(file.size / 1024).toFixed(0)}KB`;
+    document.getElementById('audioFilename').textContent = file.name;
+    document.getElementById('dlAudioBtn').textContent = '↓ ' + file.name;
+    document.getElementById('dlAudioBtn').onclick = () => {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      a.click();
+    };
+    document.getElementById('audioPlayer').classList.add('visible');
+
+    // Update upload slot UI
+    const slot = document.getElementById('voUploadSlot');
+    slot.innerHTML = `
+      <div class="upload-slot-icon">✓</div>
+      <div class="upload-slot-label" style="color:var(--green);">${file.name}</div>
+      <div class="upload-slot-name">${(file.size / 1024).toFixed(0)}KB · click to replace</div>`;
+
+    setPipe(2, 'done');
+    checkAssembleReady();
+  };
+  reader.readAsArrayBuffer(file);
+  event.target.value = '';
 }
 
 function updateSceneRecommendation() {
