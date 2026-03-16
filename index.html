@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Shorts Factory</title>
-<script src="config.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
 <style>
@@ -198,18 +197,15 @@
     <div class="status-badge"><div class="status-dot"></div>ready</div>
   </header>
 
-  <!-- Backend config -->
-  <div class="backend-notice" id="backendNotice">
-    ⚙ Connect your backend to enable voiceover, image generation and video assembly.
-    <div class="backend-url-row">
-      <input type="text" class="backend-url-input" id="backendUrl" placeholder="https://your-app.onrender.com" />
-      <button class="save-url-btn" onclick="saveBackendUrl()">Save</button>
-    </div>
+  <!-- API Gateway status -->
+  <div style="background:rgba(71,180,255,0.06);border:1px solid rgba(71,180,255,0.2);border-radius:var(--radius);padding:10px 14px;font-size:12px;font-family:var(--font-mono);color:#7CC5F0;margin-bottom:0.5rem;" id="gatewayNotice">
+    🔑 API Gateway: <span id="gatewayStatus" style="color:var(--text-muted);">not detected</span>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Run <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">node server.js</code> in the <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">api-gateway</code> folder — keys live there, never touch GitHub</div>
   </div>
-  <!-- Local assembler notice -->
+  <!-- Local assembler status -->
   <div style="background:rgba(77,255,154,0.06);border:1px solid rgba(77,255,154,0.2);border-radius:var(--radius);padding:10px 14px;font-size:12px;font-family:var(--font-mono);color:#4DFF9A;margin-bottom:1rem;" id="localNotice">
-    ⚡ Local assembler: <span id="localStatus" style="color:var(--text-muted);">not detected — video assembly will use Render</span>
-    <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Run <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">npm start</code> in the local-assembler folder to enable fast Ken Burns assembly on your PC</div>
+    ⚡ Local assembler: <span id="localStatus" style="color:var(--text-muted);">not detected</span>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Run <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">node server.js</code> in the <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">local-assembler</code> folder to enable fast Ken Burns video assembly</div>
   </div>
 
   <!-- Topic -->
@@ -504,6 +500,20 @@
         </label>
       </div>
 
+      <!-- Actual cost for this video — updates when uploads change -->
+      <div id="actualCostBar" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:0.75rem;display:none;">
+        <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em;margin-bottom:8px;">ACTUAL COST — THIS VIDEO</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">
+          <div class="cost-item"><div class="cost-item-label">Script</div><div class="cost-item-val" id="acScript">—</div></div>
+          <div class="cost-item"><div class="cost-item-label">Voiceover</div><div class="cost-item-val" id="acVoice">—</div></div>
+          <div class="cost-item"><div class="cost-item-label">Images</div><div class="cost-item-val" id="acImages">—</div></div>
+          <div class="cost-item" style="border-color:rgba(232,255,71,0.3);background:var(--accent-dim);">
+            <div class="cost-item-label" style="color:var(--accent);">Spent</div>
+            <div class="cost-item-val" style="color:var(--accent);" id="acTotal">—</div>
+          </div>
+        </div>
+      </div>
+
       <button class="master-btn" id="assembleBtn" onclick="assembleVideo()" style="margin-bottom:0;" disabled>
         <span id="assembleBtnLabel">Assemble video →</span>
       </button>
@@ -551,8 +561,35 @@ let imageProvider = 'dalle3';
 let motionMode = 'mixed';
 let showTextOverlay = true;
 let voSource = 'elevenlabs';
+let voiceSource = 'elevenlabs'; // 'elevenlabs' = paid, 'upload' = free
 
-// ─── Cost & scene helpers ─────────────────────
+// ─── Actual cost tracker — shown near Assemble button ─────────────────────────
+// Updates whenever a step completes or an upload replaces a paid service.
+function updateActualCost() {
+  if (!lastOutput) return;
+  const bar = document.getElementById('actualCostBar');
+  if (!bar) return;
+
+  const sceneCount = lastOutput.scenes?.length || 0;
+
+  // Script cost — always Claude API when generated; free if loaded from file
+  const scriptCost = lastOutput._loadedFromFile ? 0 : SCRIPT_COST;
+
+  // Voiceover cost — free if uploaded, otherwise ElevenLabs flat rate per generation
+  const voCost = (voiceSource === 'upload') ? 0 : VOICE_COST;
+
+  // Image cost — based on provider used and scene count
+  const imgCost = IMG_COSTS[imageProvider] * sceneCount;
+
+  const total = scriptCost + voCost + imgCost;
+
+  document.getElementById('acScript').textContent  = lastOutput._loadedFromFile ? 'Free' : '$' + scriptCost.toFixed(2);
+  document.getElementById('acVoice').textContent   = voiceSource === 'upload' ? 'Free' : '$' + voCost.toFixed(3);
+  document.getElementById('acImages').textContent  = imgCost === 0 ? 'Free' : '$' + imgCost.toFixed(3);
+  document.getElementById('acTotal').textContent   = '$' + total.toFixed(3);
+
+  bar.style.display = 'block';
+}
 const IMG_COSTS = { dalle3: 0.04, dalle2: 0.005, pexels: 0, upload: 0 };
 const VOICE_COST = 0.017;
 const SCRIPT_COST = 0.02;
@@ -635,6 +672,7 @@ function handleUpload(event, index) {
     }
     checkAssembleReady();
     updateImageDownloadButtons();
+    updateActualCost();
   };
   reader.readAsDataURL(file);
   event.target.value = '';
@@ -740,6 +778,8 @@ function handleVoUpload(event) {
       <div class="upload-slot-name">${(file.size / 1024).toFixed(0)}KB · click to replace</div>`;
 
     setPipe(2, 'done');
+    voiceSource = 'upload';
+    updateActualCost();
     checkAssembleReady();
   };
   reader.readAsArrayBuffer(file);
@@ -762,19 +802,40 @@ function selectProvider(p) {
   document.getElementById('providerSelect').value = p;
   updateCostSummary();
 }
-let backendUrl = localStorage.getItem('backendUrl') || '';
+let backendUrl = ''; // removed — no longer used
+const LOCAL_GATEWAY  = 'http://localhost:3000';
 const LOCAL_ASSEMBLER = 'http://localhost:3001';
 let localAssemblerAvailable = false;
+let gatewayAvailable = false;
 
 window.onload = () => {
-  if (backendUrl) {
-    document.getElementById('backendUrl').value = backendUrl;
-    document.getElementById('backendNotice').style.display = 'none';
-  }
   updateCostSummary();
-  startKeepAlive();
   checkLocalAssembler();
+  checkGateway();
 };
+
+async function checkGateway() {
+  try {
+    const resp = await fetch(LOCAL_GATEWAY + '/health', { signal: AbortSignal.timeout(2000) });
+    const data = await resp.json();
+    if (data.gateway === 'local') {
+      gatewayAvailable = true;
+      // Show which keys are set
+      const keys = data.keys || {};
+      const missing = Object.entries(keys).filter(([,v]) => v === 'missing').map(([k]) => k);
+      if (missing.length) {
+        document.getElementById('gatewayStatus').textContent = `connected ⚠ missing keys: ${missing.join(', ')}`;
+        document.getElementById('gatewayStatus').style.color = 'var(--orange)';
+      } else {
+        document.getElementById('gatewayStatus').textContent = 'connected — all keys set ✓';
+        document.getElementById('gatewayStatus').style.color = '#4DFF9A';
+      }
+    }
+  } catch(e) {
+    gatewayAvailable = false;
+  }
+  setTimeout(checkGateway, 30000);
+}
 
 async function checkLocalAssembler() {
   try {
@@ -788,28 +849,7 @@ async function checkLocalAssembler() {
   } catch(e) {
     localAssemblerAvailable = false;
   }
-  // Re-check every 30 seconds in case user starts local server later
   setTimeout(checkLocalAssembler, 30000);
-}
-
-function startKeepAlive() {
-  if (!backendUrl) return;
-  // Ping every 10 minutes to prevent Render free tier from sleeping
-  setInterval(async () => {
-    try {
-      await fetch(backendUrl + '/health');
-      console.log('[keep-alive] ping sent:', new Date().toLocaleTimeString());
-    } catch(e) {
-      console.warn('[keep-alive] ping failed:', e.message);
-    }
-  }, 10 * 60 * 1000);
-}
-
-function saveBackendUrl() {
-  backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
-  localStorage.setItem('backendUrl', backendUrl);
-  document.getElementById('backendNotice').style.display = 'none';
-  startKeepAlive();
 }
 
 function setRandom() {
@@ -854,7 +894,7 @@ function lockButtons(locked) {
 async function runFullPipeline() {
   const topic = document.getElementById('topicInput').value.trim();
   if (!topic) { highlightInput(); return; }
-  if (!backendUrl) { showError('Please save your backend URL first.'); return; }
+  if (!gatewayAvailable) { showError('API Gateway not running. Start it with: cd api-gateway && node server.js'); return; }
 
   lockButtons(true);
   hideError();
@@ -866,8 +906,10 @@ async function runFullPipeline() {
     setProgress(5, 'Generating script...');
     setPipe(1, 'active');
     lastOutput = await generateScriptAPI();
+    lastOutput._loadedFromFile = false;
     setPipe(1, 'done');
     renderOutput(lastOutput);
+    updateActualCost();
     setProgress(20, 'Script done — generating voiceover...');
 
     // Step 2: Voiceover
@@ -909,8 +951,10 @@ async function generateScriptOnly() {
 
   try {
     lastOutput = await generateScriptAPI();
+    lastOutput._loadedFromFile = false; // generated = paid
     setPipe(1, 'done');
     renderOutput(lastOutput);
+    updateActualCost();
     setProgress(100, 'Script ready');
     setTimeout(hideProgress, 1500);
   } catch(e) {
@@ -921,10 +965,9 @@ async function generateScriptOnly() {
   }
 }
 
-// ─── Script API call — direct to Anthropic ──────────
+// ─── Script API call — via local gateway ────────────
 async function generateScriptAPI() {
-  const apiKey = (typeof CONFIG !== 'undefined' && CONFIG.CLAUDE_API_KEY) || '';
-  if (!apiKey || apiKey.includes('your-')) throw new Error('CLAUDE_API_KEY not set in config.js');
+  if (!gatewayAvailable) throw new Error('API Gateway not running. Start it: cd api-gateway && node server.js');
 
   const cat = document.getElementById('catSelect').value;
   const dur = document.getElementById('durSelect').value;
@@ -949,24 +992,14 @@ Rules:
 - duration_seconds: must reflect actual scene length (2-4s typically)
 - full_voiceover_script: all voiceover lines as one continuous paragraph`;
 
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetch(LOCAL_GATEWAY + '/api/script', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }]
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system: systemPrompt, user: userPrompt })
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
-    throw new Error(err.error?.message || 'Claude API error ' + resp.status);
+    throw new Error(err.error || 'Script API error ' + resp.status);
   }
   const data = await resp.json();
   const raw = data.content.map(b => b.text || '').join('');
@@ -989,27 +1022,25 @@ async function runFactCheck() {
 
   try {
     const voiceover = lastOutput.full_voiceover_script;
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CLAUDE_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 1500,
-        system: `You are a rigorous science fact-checker. Analyse the voiceover script for factual errors. 
-Output ONLY a JSON object: {"has_errors": boolean, "issues": [{"claim": "exact quote", "error": "what is wrong", "correction": "correct version"}], "corrected_script": "full corrected voiceover script"}
-If no errors found, set has_errors to false, issues to empty array, and corrected_script to the original.`,
-        messages: [{ role: 'user', content: `Fact-check this short-form video voiceover:
+    if (!gatewayAvailable) throw new Error('API Gateway not running. Start it: cd api-gateway && node server.js');
 
-"${voiceover}"` }]
+    const systemPrompt = `You are a rigorous science fact-checker. Analyse the voiceover script for factual errors. 
+Output ONLY a JSON object: {"has_errors": boolean, "issues": [{"claim": "exact quote", "error": "what is wrong", "correction": "correct version"}], "corrected_script": "full corrected voiceover script"}
+If no errors found, set has_errors to false, issues to empty array, and corrected_script to the original.`;
+
+    const resp = await fetch(LOCAL_GATEWAY + '/api/factcheck', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: systemPrompt,
+        user: `Fact-check this short-form video voiceover:\n\n"${voiceover}"`
       })
     });
 
-    if (!resp.ok) throw new Error('Fact-check API error');
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || 'Fact-check error ' + resp.status);
+    }
     const data = await resp.json();
     const raw = data.content.map(b => b.text || '').join('').replace(/```json|```/g, '').trim();
     const result = JSON.parse(raw);
@@ -1076,9 +1107,8 @@ async function generateVoiceover() {
 }
 
 async function generateVoiceoverAPI() {
+  if (!gatewayAvailable) throw new Error('API Gateway not running. Start it: cd api-gateway && node server.js');
   const voice = document.getElementById('voiceSelect').value;
-  const elKey = (typeof CONFIG !== 'undefined' && CONFIG.ELEVENLABS_API_KEY) || '';
-  if (!elKey || elKey.includes('your-')) throw new Error('ELEVENLABS_API_KEY not set in config.js');
 
   const VOICE_IDS = {
     Rachel: '21m00Tcm4TlvDq8ikWAM',
@@ -1089,14 +1119,10 @@ async function generateVoiceoverAPI() {
   };
   const voiceId = VOICE_IDS[voice] || VOICE_IDS.Rachel;
 
-  const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+  const resp = await fetch(LOCAL_GATEWAY + '/api/voiceover', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'xi-api-key': elKey },
-    body: JSON.stringify({
-      text: lastOutput.full_voiceover_script,
-      model_id: 'eleven_monolingual_v1',
-      voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ voiceId, text: lastOutput.full_voiceover_script })
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ error: 'Voiceover failed' }));
@@ -1104,8 +1130,9 @@ async function generateVoiceoverAPI() {
   }
 
   audioBlob = await resp.blob();
-  // Also store as base64 for auto-assembly
   audioB64 = await blobToB64(audioBlob);
+  voiceSource = 'elevenlabs'; // track that this was paid
+  updateActualCost();
 
   const url = URL.createObjectURL(audioBlob);
   const audioFilename = `${projectName()}_voiceover.mp3`;
@@ -1183,6 +1210,7 @@ function selectProvider(p) {
 }
 
 async function generateImagesAPI() {
+  if (!gatewayAvailable) throw new Error('API Gateway not running. Start it: cd api-gateway && node server.js');
   const grid = document.getElementById('imagesGrid');
   const scenes = lastOutput.scenes;
   generatedImages = [];
@@ -1197,77 +1225,54 @@ async function generateImagesAPI() {
       <div class="img-card-label">Scene ${s.scene_number}: ${s.title}</div>
     </div>`).join('');
 
-  // For Pexels — call directly from browser
-  if (imageProvider === 'pexels') {
-    const pexelsKey = (typeof CONFIG !== 'undefined' && CONFIG.PEXELS_API_KEY) || '';
-    if (!pexelsKey || pexelsKey.includes('your-')) throw new Error('PEXELS_API_KEY not set in config.js');
-    const results = [];
-    for (const s of scenes) {
-      const query = encodeURIComponent((lastOutput.tags || [s.title]).join(' '));
-      const r = await fetch(`https://api.pexels.com/v1/search?query=${query}&per_page=1&orientation=portrait`, {
-        headers: { 'Authorization': pexelsKey }
-      });
-      if (!r.ok) throw new Error('Pexels error ' + r.status);
-      const d = await r.json();
-      const photo = d.photos?.[0];
-      results.push({
-        scene_number: s.scene_number,
-        title: s.title,
-        url: photo?.src?.portrait || photo?.src?.large || null,
-        b64: null
-      });
-    }
-    generatedImages = results;
-    renderImageCards(results);
-    return;
-  }
-
-  // For DALL-E — generate one at a time so cards fill in progressively
+  // All providers go through the gateway — keys never leave the local machine
   for (let i = 0; i < scenes.length; i++) {
     const scene = scenes[i];
     const labelEl = document.getElementById('imgLabel' + i);
     if (labelEl) labelEl.textContent = `Scene ${scene.scene_number} — generating... (${i+1}/${scenes.length})`;
 
-    const openAIKey = (typeof CONFIG !== 'undefined' && CONFIG.OPENAI_API_KEY) || '';
-    if (!openAIKey || openAIKey.includes('your-')) throw new Error('OPENAI_API_KEY not set in config.js');
-    const dalleModel = imageProvider === 'dalle3' ? 'dall-e-3' : 'dall-e-2';
-    const dalleSize = imageProvider === 'dalle3' ? '1024x1792' : '512x512';
-    const resp = await fetch('https://api.openai.com/v1/images/generations', {
+    const resp = await fetch(LOCAL_GATEWAY + '/api/images', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openAIKey}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: dalleModel,
+        provider: imageProvider,
         prompt: scene.visual_prompt,
-        n: 1,
-        size: dalleSize,
-        response_format: 'b64_json'
+        scene_number: scene.scene_number,
+        scene_title: scene.title,
+        tags: lastOutput.tags || [],
+        page: 1
       })
     });
     if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ error: { message: 'Image generation failed' } }));
-      throw new Error(`Scene ${scene.scene_number}: ${err.error?.message || 'error ' + resp.status}`);
+      const err = await resp.json().catch(() => ({ error: 'Image generation failed' }));
+      throw new Error(`Scene ${scene.scene_number}: ${err.error || 'error ' + resp.status}`);
     }
-    const dalleData = await resp.json();
-    const img = {
-      scene_number: scene.scene_number,
-      title: scene.title,
-      b64: dalleData.data[0].b64_json,
-      url: null
-    };
+    const data = await resp.json();
+    const img = data.image;
     generatedImages.push(img);
 
     // Render this card immediately — don't wait for others
     const card = document.getElementById('imgCard' + i);
     if (card) {
-      card.innerHTML = `
-        <img src="data:image/png;base64,${img.b64}" alt="Scene ${img.scene_number}" loading="lazy" />
-        <button class="img-refresh-btn" onclick="refreshImage(${i})">↺ regenerate</button>
-        <div class="img-card-label">Scene ${img.scene_number}: ${img.title}</div>`;
+      const refreshLabel = imageProvider === 'pexels' ? '↺ new photo' : '↺ regenerate';
+      if (img.b64) {
+        card.innerHTML = `
+          <img src="data:image/png;base64,${img.b64}" alt="Scene ${img.scene_number}" loading="lazy" />
+          <button class="img-refresh-btn" onclick="refreshImage(${i})">${refreshLabel}</button>
+          <div class="img-card-label">Scene ${img.scene_number}: ${img.title}</div>`;
+      } else if (img.url) {
+        card.innerHTML = `
+          <img src="${img.url}" alt="Scene ${img.scene_number}" loading="lazy" crossorigin="anonymous" />
+          <button class="img-refresh-btn" onclick="refreshImage(${i})">${refreshLabel}</button>
+          <div class="img-card-label">Scene ${img.scene_number}: ${img.title}</div>`;
+      }
     }
 
-    // Update progress
     setProgress(40 + Math.round((i + 1) / scenes.length * 35), `Image ${i+1} of ${scenes.length} done...`);
   }
+
+  // Update actual cost now that we know provider + count
+  updateActualCost();
 }
 
 function renderImageCards(images) {
@@ -1414,19 +1419,20 @@ async function refreshImage(index) {
   if (btn) { btn.disabled = true; btn.textContent = '...'; }
 
   try {
-    // All refresh calls go through backend — no client-side keys needed
     if (imageProvider === 'pexels') {
       pexelsPageMap[scene.scene_number] = (pexelsPageMap[scene.scene_number] || 1) + 1;
     } else {
       card.innerHTML = `<div class="img-generating"><div class="img-spinner"></div><div class="img-gen-label">Regenerating...</div></div><div class="img-card-label">Scene ${scene.scene_number}: ${scene.title}</div>`;
     }
-    const resp = await fetch(backendUrl + '/refresh-image', {
+    const resp = await fetch(LOCAL_GATEWAY + '/api/refresh-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        scene: { scene_number: scene.scene_number, title: scene.title, visual_prompt: scene.visual_prompt },
+        provider: imageProvider,
+        prompt: scene.visual_prompt,
+        scene_number: scene.scene_number,
+        scene_title: scene.title,
         tags: lastOutput.tags || [],
-        model: imageProvider,
         page: pexelsPageMap[scene.scene_number] || 1
       })
     });
@@ -1478,12 +1484,12 @@ async function assembleVideo() {
 }
 
 async function assembleVideoAPI() {
+  if (!localAssemblerAvailable) throw new Error('Local assembler not running. Start it: cd local-assembler && node server.js');
   const durations = lastOutput.scenes.map(s => s.duration_seconds || (lastOutput.total_duration / lastOutput.scenes.length));
 
-  const assembleUrl = localAssemblerAvailable ? LOCAL_ASSEMBLER : backendUrl;
-  console.log(`[assemble] Using: ${localAssemblerAvailable ? 'LOCAL PC' : 'Render backend'}`);
+  console.log('[assemble] Using: LOCAL PC assembler');
 
-  const resp = await fetch(assembleUrl + '/assemble-auto', {
+  const resp = await fetch(LOCAL_ASSEMBLER + '/assemble-auto', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1676,6 +1682,7 @@ function loadScriptFromFile(event) {
         return;
       }
       lastOutput = parsed;
+      lastOutput._loadedFromFile = true; // script cost = $0
       hideError();
 
       // Sync scene count dropdown to match loaded script
@@ -1707,6 +1714,7 @@ function loadScriptFromFile(event) {
 
       // Recalculate cost with loaded script's scene count
       updateCostSummary();
+      updateActualCost();
 
       renderOutput(lastOutput);
       setPipe(1, 'done');
