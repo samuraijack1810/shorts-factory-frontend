@@ -1649,6 +1649,7 @@ async function assembleVideoAPI() {
       images: generatedImages.map(img => ({ scene_number: img.scene_number, b64: img.b64 || null, url: img.url || null })),
       audioB64,
       musicB64: musicB64 || null,
+      wordCounts: lastOutput.scenes.map(s => s.voiceover ? s.voiceover.split(/\s+/).length : 0),
       title: lastOutput.title || 'shorts_video',
       motionMode,
       showText: showTextOverlay,
