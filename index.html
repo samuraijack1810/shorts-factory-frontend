@@ -1124,18 +1124,24 @@ async function generateScriptAPI() {
   const systemPrompt = `You are a viral short-form video creator. Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
 {"title":"string","hook_stat":"string","total_duration":number,"scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5}],"full_voiceover_script":"string","cta_line":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}`;
 
+  // Word count limits — ElevenLabs reads at ~130-150wpm documentary pace.
+  // These caps ensure the audio actually fits the target duration.
+  const wordLimits = { '30': 65, '45': 95, '60': 125 };
+  const maxWords = wordLimits[dur] || 65;
+
   const userPrompt = `Create a ${dur}-second ${tone} YouTube/Instagram Shorts script about: "${topic}"
 Category: ${cat}. Niche: ${niche}.
 Rules:
 - Exactly ${sceneCount} scenes total — scene count must match exactly
+- HARD WORD LIMIT: full_voiceover_script must be ${maxWords} words or fewer. Count every word before finishing. This is the most important rule — ElevenLabs reads at ~140wpm so ${maxWords} words = ~${dur} seconds of audio.
 - Keep each scene to 2-4 seconds max — short-form audiences need fast visual cuts
 - Scene 1: punchy 2-3s scroll-stopping hook, no longer
 - Every factual claim must be 100% scientifically accurate — double check numbers, temperatures, dates
-- Fast breathless narration — no filler words
+- Fast breathless narration — no filler words, no padding
 - Final scene: clever subscribe CTA (2-3s max)
 - Visual prompts: cinematic, hyper-realistic, 9:16 vertical, no text in frame, mobile safe zones
 - duration_seconds: must reflect actual scene length (2-4s typically)
-- full_voiceover_script: all voiceover lines as one continuous paragraph`;
+- full_voiceover_script: all voiceover lines as one continuous paragraph — must be ${maxWords} words or fewer`;
 
   const resp = await fetch(LOCAL_GATEWAY + '/api/script', {
     method: 'POST',
@@ -1418,6 +1424,7 @@ async function generateImagesAPI() {
 
   // Update actual cost now that we know provider + count
   updateActualCost();
+  updateImageDownloadButtons();
 }
 
 function renderImageCards(images) {
