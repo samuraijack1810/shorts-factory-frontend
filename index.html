@@ -470,20 +470,64 @@
           <div class="provider-card active" id="motion-mixed" onclick="selectMotion('mixed')">
             <div class="prov-name">Mixed</div>
             <div class="prov-cost">Recommended</div>
-            <div class="prov-tag">zoom + static</div>
+            <div class="prov-tag">all effects</div>
           </div>
           <div class="provider-card" id="motion-zoom" onclick="selectMotion('zoom')">
-            <div class="prov-name">All zoom</div>
+            <div class="prov-name">Zoom in</div>
             <div class="prov-cost">Ken Burns</div>
-            <div class="prov-tag">every scene</div>
+            <div class="prov-tag">pulls closer</div>
           </div>
-          <div class="provider-card" id="motion-static" onclick="selectMotion('static')">
+          <div class="provider-card" id="motion-zoomout" onclick="selectMotion('zoomout')">
+            <div class="prov-name">Zoom out</div>
+            <div class="prov-cost">Ken Burns</div>
+            <div class="prov-tag">pulls back</div>
+          </div>
+          <div class="provider-card" id="motion-panleft" onclick="selectMotion('panleft')">
+            <div class="prov-name">Pan left</div>
+            <div class="prov-cost">Horizontal</div>
+            <div class="prov-tag">drifts left</div>
+          </div>
+          <div class="provider-card" id="motion-panright" onclick="selectMotion('panright')">
+            <div class="prov-name">Pan right</div>
+            <div class="prov-cost">Horizontal</div>
+            <div class="prov-tag">drifts right</div>
+          </div>
+          <div class="provider-card" id="motion-driftup" onclick="selectMotion('driftup')">
+            <div class="prov-name">Drift up</div>
+            <div class="prov-cost">Vertical</div>
+            <div class="prov-tag">floats up</div>
+          </div>
+          <div class="provider-card" id="motion-static" onclick="selectMotion('static')" style="grid-column:span 3;">
             <div class="prov-name">All static</div>
-            <div class="prov-cost">Fastest</div>
-            <div class="prov-tag">no movement</div>
+            <div class="prov-cost">Fastest assembly · no movement</div>
           </div>
         </div>
-        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-top:6px;" id="motionDesc">Mixed: hook scene zooms in, CTA stays static, middle scenes alternate — smooth crossfade between all scenes</div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-top:6px;" id="motionDesc">Mixed: cycles through all effects — zoom in, zoom out, pan left, pan right, drift up</div>
+      </div>
+
+      <!-- Background music upload -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:8px;">BACKGROUND MUSIC <span style="color:var(--text-muted);font-weight:400;">(optional)</span></div>
+        <div class="upload-slot" onclick="document.getElementById('musicFileInput').click()" id="musicUploadSlot" style="aspect-ratio:unset;padding:14px;text-align:center;">
+          <div id="musicSlotInner">
+            <div class="upload-slot-icon">♪</div>
+            <div class="upload-slot-label">Upload MP3 or WAV</div>
+            <div class="upload-slot-name">Mixed at -18dB under voiceover</div>
+          </div>
+        </div>
+        <input type="file" id="musicFileInput" accept="audio/mpeg,audio/wav,audio/mp3" style="display:none;" onchange="handleMusicUpload(event)" />
+
+        <!-- Find music panel — shown after script is generated -->
+        <div id="musicFindPanel" style="display:none;margin-top:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;">
+          <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em;margin-bottom:8px;">FIND FREE MUSIC</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+            <a href="https://pixabay.com/music/" target="_blank" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:11px;font-family:var(--font-mono);color:var(--blue);text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">↗ Pixabay Music</a>
+            <a href="https://freesound.org/" target="_blank" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:11px;font-family:var(--font-mono);color:var(--blue);text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">↗ Freesound</a>
+            <a href="https://studio.youtube.com/channel/UC/music" target="_blank" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:11px;font-family:var(--font-mono);color:var(--blue);text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">↗ YT Audio Library</a>
+          </div>
+          <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:6px;">SUGGESTED SEARCH TERMS FOR THIS SCRIPT</div>
+          <div id="musicKeywords" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+        </div>
       </div>
 
       <!-- Text overlay toggle -->
@@ -555,6 +599,7 @@ const RANDOM_TOPICS = [
 let lastOutput = null;
 let audioBlob = null;
 let audioB64 = null;
+let musicB64 = null; // background music — optional
 let generatedImages = [];
 let pexelsPageMap = {};  // tracks which page each scene is on for refresh
 let imageProvider = 'dalle3';
@@ -696,17 +741,21 @@ function getUploadReadyCount() {
 
 function selectMotion(mode) {
   motionMode = mode;
-  ['mixed','zoom','static'].forEach(m => {
+  ['mixed','zoom','zoomout','panleft','panright','driftup','static'].forEach(m => {
     const el = document.getElementById('motion-' + m);
     if (el) el.classList.toggle('active', m === mode);
   });
   const descs = {
-    mixed: 'Mixed: hook scene zooms in, CTA stays static, middle scenes alternate — smooth crossfade between all scenes',
-    zoom: 'All zoom: every scene gets a slow Ken Burns zoom — great for dramatic topics',
-    static: 'All static: clean still cuts with crossfade — fastest assembly, minimal distraction'
+    mixed:    'Mixed: cycles through all effects — zoom in, zoom out, pan left, pan right, drift up, with static on CTA',
+    zoom:     'Zoom in: Ken Burns slow zoom in on every scene — pulls the viewer closer',
+    zoomout:  'Zoom out: Ken Burns slow zoom out — starts close, reveals the scene',
+    panleft:  'Pan left: slow horizontal drift left across every scene',
+    panright: 'Pan right: slow horizontal drift right across every scene',
+    driftup:  'Drift up: slow vertical float upward — great for tall portrait images',
+    static:   'All static: clean still cuts with crossfade — fastest assembly, minimal distraction'
   };
   const el = document.getElementById('motionDesc');
-  if (el) el.textContent = descs[mode];
+  if (el) el.textContent = descs[mode] || '';
 }
 
 function toggleTextOverlay() {
@@ -794,6 +843,102 @@ function updateSceneRecommendation() {
   else if (dur <= 45) sceneSelect.value = '4';
   else sceneSelect.value = '5';
   updateCostSummary();
+}
+
+// ─── Background music upload ──────────────────
+function handleMusicUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    musicB64 = e.target.result.split(',')[1];
+    const slot = document.getElementById('musicSlotInner');
+    slot.innerHTML = `
+      <div class="upload-slot-icon">✓</div>
+      <div class="upload-slot-label" style="color:var(--green);">${file.name}</div>
+      <div class="upload-slot-name">${(file.size / 1024).toFixed(0)}KB · mixed at -18dB · <span style="cursor:pointer;color:var(--red);" onclick="clearMusic(event)">remove</span></div>`;
+    document.getElementById('musicUploadSlot').classList.add('filled');
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function clearMusic(event) {
+  event.stopPropagation();
+  musicB64 = null;
+  document.getElementById('musicUploadSlot').classList.remove('filled');
+  document.getElementById('musicSlotInner').innerHTML = `
+    <div class="upload-slot-icon">♪</div>
+    <div class="upload-slot-label">Upload MP3 or WAV</div>
+    <div class="upload-slot-name">Mixed at -18dB under voiceover</div>`;
+}
+
+// ─── Music keyword suggestions ────────────────
+// Maps category + tone → search terms for Pixabay/Freesound
+const MUSIC_KEYWORDS = {
+  science: {
+    'mind-blowing': ['epic orchestral', 'cinematic science', 'dramatic build', 'space ambient'],
+    'eerie':        ['dark ambient', 'mysterious tension', 'eerie drone', 'unsettling atmosphere'],
+    'darkly funny': ['quirky background', 'playful cinematic', 'light comedic'],
+    'wonder':       ['ambient wonder', 'inspiring instrumental', 'uplifting cinematic']
+  },
+  history: {
+    'mind-blowing': ['epic historical', 'dramatic orchestral', 'powerful cinematic'],
+    'eerie':        ['dark history', 'ancient mystery', 'haunting medieval'],
+    'darkly funny': ['quirky historical', 'playful adventure'],
+    'wonder':       ['ancient wonder', 'historical ambient', 'epic adventure']
+  },
+  mystery: {
+    'mind-blowing': ['suspense build', 'mystery reveal', 'thriller cinematic'],
+    'eerie':        ['dark mystery', 'horror ambient', 'tension drone'],
+    'darkly funny': ['quirky mystery', 'comedic suspense'],
+    'wonder':       ['mysterious wonder', 'ethereal ambient']
+  },
+  nature: {
+    'mind-blowing': ['nature epic', 'wildlife documentary', 'powerful nature'],
+    'eerie':        ['dark nature', 'forest ambient', 'wild tension'],
+    'darkly funny': ['playful nature', 'light adventure'],
+    'wonder':       ['nature ambient', 'peaceful documentary', 'inspiring nature']
+  },
+  tech: {
+    'mind-blowing': ['technology cinematic', 'futuristic build', 'digital epic'],
+    'eerie':        ['dark tech', 'dystopian ambient', 'cyber tension'],
+    'darkly funny': ['quirky tech', 'playful electronic'],
+    'wonder':       ['futuristic ambient', 'inspiring technology', 'innovation']
+  },
+  psychology: {
+    'mind-blowing': ['mind cinematic', 'psychological build', 'dramatic reveal'],
+    'eerie':        ['psychological tension', 'dark mind', 'unsettling ambient'],
+    'darkly funny': ['quirky psychological', 'comedic drama'],
+    'wonder':       ['human nature ambient', 'inspiring psychology']
+  }
+};
+
+function updateMusicKeywords() {
+  if (!lastOutput) return;
+  const panel = document.getElementById('musicFindPanel');
+  const kwContainer = document.getElementById('musicKeywords');
+  if (!panel || !kwContainer) return;
+
+  const cat  = document.getElementById('catSelect')?.value || 'science';
+  const tone = document.getElementById('toneSelect')?.value || 'mind-blowing';
+
+  const keywords = (MUSIC_KEYWORDS[cat]?.[tone] || ['cinematic background', 'ambient instrumental', 'dramatic music'])
+    .concat((lastOutput.tags || []).slice(0, 2));
+
+  kwContainer.innerHTML = [...new Set(keywords)].map(kw =>
+    `<span class="tag" style="cursor:pointer;border-color:rgba(71,180,255,0.3);color:var(--blue);" 
+      onclick="copyMusicKeyword(this,'${kw.replace(/'/g,"\\'")}')">🔍 ${kw}</span>`
+  ).join('');
+
+  panel.style.display = 'block';
+}
+
+function copyMusicKeyword(el, kw) {
+  navigator.clipboard.writeText(kw).catch(() => {});
+  const orig = el.textContent;
+  el.textContent = '✓ copied!';
+  setTimeout(() => el.textContent = orig, 1500);
 }
 
 // Sync provider card click back to dropdown
@@ -1485,8 +1630,9 @@ async function assembleVideo() {
 
 async function assembleVideoAPI() {
   if (!localAssemblerAvailable) throw new Error('Local assembler not running. Start it: cd local-assembler && node server.js');
-  const durations = lastOutput.scenes.map(s => s.duration_seconds || (lastOutput.total_duration / lastOutput.scenes.length));
 
+  // Note: durations are intentionally NOT sent — assembler now derives them
+  // from actual audio duration for accurate subtitle timing (Fix 1)
   console.log('[assemble] Using: LOCAL PC assembler');
 
   const resp = await fetch(LOCAL_ASSEMBLER + '/assemble-auto', {
@@ -1495,7 +1641,7 @@ async function assembleVideoAPI() {
     body: JSON.stringify({
       images: generatedImages.map(img => ({ scene_number: img.scene_number, b64: img.b64 || null, url: img.url || null })),
       audioB64,
-      durations,
+      musicB64: musicB64 || null,
       title: lastOutput.title || 'shorts_video',
       motionMode,
       showText: showTextOverlay,
@@ -1601,6 +1747,8 @@ function renderOutput(out) {
   document.getElementById('factCheckResult').style.display = 'none';
   document.getElementById('applyFactsBtn').style.display = 'none';
   factCheckedScript = null;
+  // Update music keyword suggestions for this script
+  updateMusicKeywords();
 }
 
 function toggleScene(head) { head.parentElement.classList.toggle('open'); }
