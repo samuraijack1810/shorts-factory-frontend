@@ -544,6 +544,37 @@
         </label>
       </div>
 
+      <!-- Channel name + intro/outro -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:1rem;">
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em;margin-bottom:10px;">CHANNEL BRANDING</div>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);display:block;margin-bottom:5px;">CHANNEL NAME</label>
+          <input type="text" id="channelNameInput" placeholder="e.g. MindBlown Facts"
+            style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;font-size:13px;font-family:var(--font-display);color:var(--text);outline:none;"
+            oninput="saveChannelName()" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--text);">Intro card</div>
+              <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);">0.8s title animation</div>
+            </div>
+            <div style="position:relative;width:36px;height:20px;background:var(--surface2);border-radius:999px;cursor:pointer;transition:background 0.2s;" id="introTrack" onclick="toggleIntro()">
+              <div style="position:absolute;top:2px;left:2px;width:16px;height:16px;background:#6B7280;border-radius:50%;transition:left 0.2s,background 0.2s;" id="introThumb"></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--text);">Outro card</div>
+              <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);">1.5s subscribe CTA</div>
+            </div>
+            <div style="position:relative;width:36px;height:20px;background:var(--surface2);border-radius:999px;cursor:pointer;transition:background 0.2s;" id="outroTrack" onclick="toggleOutro()">
+              <div style="position:absolute;top:2px;left:2px;width:16px;height:16px;background:#6B7280;border-radius:50%;transition:left 0.2s,background 0.2s;" id="outroThumb"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Actual cost for this video — updates when uploads change -->
       <div id="actualCostBar" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:0.75rem;display:none;">
         <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em;margin-bottom:8px;">ACTUAL COST — THIS VIDEO</div>
@@ -600,6 +631,7 @@ let lastOutput = null;
 let audioBlob = null;
 let audioB64 = null;
 let musicB64 = null; // background music — optional
+let wordTimings = []; // [{word, start, end}] from ElevenLabs word timestamps
 let generatedImages = [];
 let pexelsPageMap = {};  // tracks which page each scene is on for refresh
 let imageProvider = 'dalle3';
@@ -607,6 +639,8 @@ let motionMode = 'mixed';
 let showTextOverlay = true;
 let voSource = 'elevenlabs';
 let voiceSource = 'elevenlabs'; // 'elevenlabs' = paid, 'upload' = free
+let showIntro = false;
+let showOutro = false;
 
 // ─── Actual cost tracker — shown near Assemble button ─────────────────────────
 // Updates whenever a step completes or an upload replaces a paid service.
@@ -774,6 +808,35 @@ function toggleTextOverlay() {
   }
 }
 
+function toggleIntro() {
+  showIntro = !showIntro;
+  const track = document.getElementById('introTrack');
+  const thumb = document.getElementById('introThumb');
+  track.style.background = showIntro ? 'var(--accent)' : 'var(--surface2)';
+  thumb.style.left        = showIntro ? '18px' : '2px';
+  thumb.style.background  = showIntro ? '#080A0F' : '#6B7280';
+}
+
+function toggleOutro() {
+  showOutro = !showOutro;
+  const track = document.getElementById('outroTrack');
+  const thumb = document.getElementById('outroThumb');
+  track.style.background = showOutro ? 'var(--accent)' : 'var(--surface2)';
+  thumb.style.left        = showOutro ? '18px' : '2px';
+  thumb.style.background  = showOutro ? '#080A0F' : '#6B7280';
+}
+
+function saveChannelName() {
+  const val = document.getElementById('channelNameInput')?.value || '';
+  localStorage.setItem('channelName', val);
+}
+
+function loadChannelName() {
+  const saved = localStorage.getItem('channelName') || '';
+  const el = document.getElementById('channelNameInput');
+  if (el && saved) el.value = saved;
+}
+
 function selectVoSource(src) {
   voSource = src;
   ['elevenlabs','upload'].forEach(s => {
@@ -828,6 +891,7 @@ function handleVoUpload(event) {
 
     setPipe(2, 'done');
     voiceSource = 'upload';
+    wordTimings = []; // no word timestamps for uploaded audio — subtitle fallback to chunk mode
     updateActualCost();
     checkAssembleReady();
   };
@@ -957,6 +1021,7 @@ window.onload = () => {
   updateCostSummary();
   checkLocalAssembler();
   checkGateway();
+  loadChannelName();
 };
 
 async function checkGateway() {
@@ -1280,18 +1345,25 @@ async function generateVoiceoverAPI() {
     throw new Error(err.error || 'Voiceover error ' + resp.status);
   }
 
-  audioBlob = await resp.blob();
-  audioB64 = await blobToB64(audioBlob);
-  voiceSource = 'elevenlabs'; // track that this was paid
+  // Gateway now returns JSON { audioB64, wordTimings }
+  const data = await resp.json();
+  audioB64    = data.audioB64;
+  wordTimings = data.wordTimings || [];
+
+  // Reconstruct blob for playback
+  const bytes = Uint8Array.from(atob(audioB64), c => c.charCodeAt(0));
+  audioBlob   = new Blob([bytes], { type: 'audio/mpeg' });
+
+  voiceSource = 'elevenlabs';
   updateActualCost();
 
-  const url = URL.createObjectURL(audioBlob);
+  const url           = URL.createObjectURL(audioBlob);
   const audioFilename = `${projectName()}_voiceover.mp3`;
   document.getElementById('audioEl').src = url;
   document.getElementById('audioTitle').textContent = lastOutput.title || 'Voiceover';
-  document.getElementById('audioSub').textContent = `ElevenLabs · ${voice} · ready`;
+  document.getElementById('audioSub').textContent   = `ElevenLabs · ${voice} · ${wordTimings.length > 0 ? wordTimings.length + ' words timed ✓' : 'ready'}`;
   document.getElementById('audioFilename').textContent = audioFilename;
-  document.getElementById('dlAudioBtn').textContent = '↓ ' + audioFilename;
+  document.getElementById('dlAudioBtn').textContent    = '↓ ' + audioFilename;
   document.getElementById('audioPlayer').classList.add('visible');
   document.getElementById('dlAudioBtn').onclick = () => {
     const a = document.createElement('a'); a.href = url; a.download = audioFilename; a.click();
@@ -1638,22 +1710,25 @@ async function assembleVideo() {
 async function assembleVideoAPI() {
   if (!localAssemblerAvailable) throw new Error('Local assembler not running. Start it: cd local-assembler && node server.js');
 
-  // Note: durations are intentionally NOT sent — assembler now derives them
-  // from actual audio duration for accurate subtitle timing (Fix 1)
-  console.log('[assemble] Using: LOCAL PC assembler');
+  const channelName = document.getElementById('channelNameInput')?.value.trim() || '';
+  console.log(`[assemble] wordTimings: ${wordTimings.length} words | intro: ${showIntro} | outro: ${showOutro}`);
 
   const resp = await fetch(LOCAL_ASSEMBLER + '/assemble-auto', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      images: generatedImages.map(img => ({ scene_number: img.scene_number, b64: img.b64 || null, url: img.url || null })),
+      images:      generatedImages.map(img => ({ scene_number: img.scene_number, b64: img.b64 || null, url: img.url || null })),
       audioB64,
-      musicB64: musicB64 || null,
-      wordCounts: lastOutput.scenes.map(s => s.voiceover ? s.voiceover.split(/\s+/).length : 0),
-      title: lastOutput.title || 'shorts_video',
+      musicB64:    musicB64 || null,
+      wordCounts:  lastOutput.scenes.map(s => s.voiceover ? s.voiceover.split(/\s+/).length : 0),
+      wordTimings: wordTimings || [],
+      title:       lastOutput.title || 'shorts_video',
       motionMode,
-      showText: showTextOverlay,
-      scenes: lastOutput.scenes.map(s => ({ voiceover: s.voiceover, title: s.title }))
+      showText:    showTextOverlay,
+      scenes:      lastOutput.scenes.map(s => ({ voiceover: s.voiceover, title: s.title })),
+      channelName,
+      showIntro:   showIntro && !!channelName,
+      showOutro:   showOutro && !!channelName,
     })
   });
 
