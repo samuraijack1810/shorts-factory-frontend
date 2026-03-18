@@ -1017,12 +1017,94 @@ const LOCAL_ASSEMBLER = 'http://localhost:3001';
 let localAssemblerAvailable = false;
 let gatewayAvailable = false;
 
+// ─── Pipeline state ───────────────────────────────────────────────────────────
+let currentTopicTag  = '';
+let currentCtaQuestion = '';
+
 window.onload = () => {
   updateCostSummary();
   checkLocalAssembler();
   checkGateway();
   loadChannelName();
+  prefillChannelNameFromGateway();
 };
+
+// Fetch CHANNEL_NAME from gateway and prefill the input (if not already set by user)
+async function prefillChannelNameFromGateway() {
+  try {
+    const resp = await fetch(LOCAL_GATEWAY + '/api/channel-name', { signal: AbortSignal.timeout(2000) });
+    if (!resp.ok) return;
+    const { channelName } = await resp.json();
+    const el = document.getElementById('channelNameInput');
+    if (el && !el.value && channelName) {
+      el.value = channelName;
+      localStorage.setItem('channelName', channelName);
+    }
+  } catch (_) {}
+}
+
+// ─── Browser-side perceptual hash (average hash, 8×8) ─────────────────────────
+// Computes a 64-bit fingerprint for an image. Used to detect duplicate scenes.
+async function computeImageHash(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 8; canvas.height = 8;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, 8, 8);
+      const data = ctx.getImageData(0, 0, 8, 8).data;
+      const gray = [];
+      for (let i = 0; i < data.length; i += 4) {
+        gray.push(data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114);
+      }
+      const avg  = gray.reduce((a, b) => a + b, 0) / gray.length;
+      const bits = gray.map(v => v >= avg ? 1 : 0);
+      resolve(bits);
+    };
+    img.onerror = () => resolve(null);
+    img.src = src.startsWith('data:') ? src : `data:image/jpeg;base64,${src}`;
+  });
+}
+
+function hashSimilarity(h1, h2) {
+  if (!h1 || !h2) return 0;
+  let diff = 0;
+  for (let i = 0; i < h1.length; i++) if (h1[i] !== h2[i]) diff++;
+  return 1 - (diff / 64);
+}
+
+async function runPHashDeduplication(images) {
+  // images: [{ scene_number, b64?, url? }]
+  const hashes = [];
+  for (const img of images) {
+    const src = img.b64 ? `data:image/png;base64,${img.b64}` : img.url;
+    const h = src ? await computeImageHash(src) : null;
+    hashes.push(h);
+  }
+  const duplicates = [];
+  for (let i = 0; i < hashes.length; i++) {
+    for (let j = i + 1; j < hashes.length; j++) {
+      const sim = hashSimilarity(hashes[i], hashes[j]);
+      if (sim > 0.85) {
+        duplicates.push({ sceneA: i + 1, sceneB: j + 1, similarity: Math.round(sim * 100) });
+      }
+    }
+  }
+  return duplicates;
+}
+
+// ─── Scene duration pre-check ─────────────────────────────────────────────────
+// Estimates scene durations from word counts and flags any that would exceed 7s.
+function estimateSceneDurations(scenes, audioDurationEstimate) {
+  const wordCounts = scenes.map(s => (s.voiceover || '').split(/\s+/).filter(Boolean).length);
+  const totalWords = wordCounts.reduce((a, b) => a + b, 0);
+  if (!totalWords) return [];
+  const FADE_DUR   = 0.6;
+  const target     = audioDurationEstimate + 0.3 + (scenes.length - 1) * FADE_DUR;
+  return wordCounts.map(w => (w / totalWords) * target);
+}
 
 async function checkGateway() {
   try {
@@ -1208,18 +1290,91 @@ Rules:
 - duration_seconds: must reflect actual scene length (2-4s typically)
 - full_voiceover_script: all voiceover lines as one continuous paragraph — must be ${maxWords} words or fewer`;
 
-  const resp = await fetch(LOCAL_GATEWAY + '/api/script', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ system: systemPrompt, user: userPrompt })
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.error || 'Script API error ' + resp.status);
+  const MAX_REGEN = 2;
+  let attempt = 0;
+  let parsed;
+
+  while (attempt <= MAX_REGEN) {
+    const resp = await fetch(LOCAL_GATEWAY + '/api/script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system: systemPrompt, user: userPrompt })
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || 'Script API error ' + resp.status);
+    }
+    const data = await resp.json();
+    const raw  = data.content.map(b => b.text || '').join('');
+    parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+
+    // ── Topic focus validation ──────────────────────────────────────────────
+    const scriptText = parsed.full_voiceover_script || parsed.scenes?.map(s => s.voiceover).join(' ') || '';
+    try {
+      const topicResp = await fetch(LOCAL_GATEWAY + '/api/topic-validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scriptText })
+      });
+      if (topicResp.ok) {
+        const topicData = await topicResp.json();
+        currentTopicTag = topicData.topicTag || '';
+        if (!topicData.singleTopic) {
+          attempt++;
+          if (attempt > MAX_REGEN) throw new Error('Script keeps covering multiple topics. Narrow your topic and try again.');
+          console.warn(`[script] MULTI_TOPIC detected — regenerating (attempt ${attempt})`);
+          userPrompt += '\n\nFocus on exactly ONE historical mystery or event. Do not combine multiple unrelated topics in a single video.';
+          continue;
+        }
+        console.log(`[script] Topic validated: ${topicData.topicTag}`);
+      }
+    } catch (e) {
+      if (e.message.includes('MULTI_TOPIC') || e.message.includes('multiple topics')) throw e;
+      console.warn('[script] Topic validation skipped:', e.message);
+    }
+
+    // ── Hook structure validation ──────────────────────────────────────────
+    const hookLine = parsed.hook_stat || parsed.scenes?.[0]?.voiceover?.split('.')[0] || '';
+    const HOOK_PATTERNS = [
+      /^.+\s*[—–-]\s*here'?s why/i,
+      /^.+\s+did\s+.+\s*[—–-]\s*and\s+history\s+buried\s+it/i,
+      /^most\s+people\s+don'?t\s+know\s+/i,
+      /^\d+\s+.+\s+secrets?\s+they\s+don'?t\s+teach/i,
+    ];
+    const hookValid = HOOK_PATTERNS.some(p => p.test(hookLine.trim()));
+    if (!hookValid) {
+      attempt++;
+      if (attempt > MAX_REGEN) {
+        console.warn('[script] Hook pattern did not match after retries — proceeding anyway');
+        break;
+      }
+      console.warn(`[script] Hook invalid: "${hookLine}" — regenerating (attempt ${attempt})`);
+      userPrompt += `\n\nThe hook (Scene 1 opening line) MUST match one of these structures:\n- "[Shocking fact] — here's why"\n- "[Group] did [dark thing] — and history buried it"\n- "Most people don't know [fact]..."\n- "[Number] [topic] secrets they don't teach in school"`;
+      continue;
+    }
+    console.log(`[script] Hook validated: "${hookLine}"`);
+
+    // ── CTA engagement question ────────────────────────────────────────────
+    currentCtaQuestion = '';
+    try {
+      const ctaResp = await fetch(LOCAL_GATEWAY + '/api/cta-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: topic || parsed.title })
+      });
+      if (ctaResp.ok) {
+        const ctaData = await ctaResp.json();
+        currentCtaQuestion = ctaData.question || '';
+        console.log(`[script] CTA question: "${currentCtaQuestion}"`);
+      }
+    } catch (e) {
+      console.warn('[script] CTA question generation skipped:', e.message);
+    }
+
+    break; // all checks passed
   }
-  const data = await resp.json();
-  const raw = data.content.map(b => b.text || '').join('');
-  return JSON.parse(raw.replace(/```json|```/g, '').trim());
+
+  return parsed;
 }
 
 // ─── Fact check ──────────────────────────────
@@ -1497,6 +1652,58 @@ async function generateImagesAPI() {
   // Update actual cost now that we know provider + count
   updateActualCost();
   updateImageDownloadButtons();
+
+  // ── pHash deduplication check ──────────────────────────────────────────────
+  if (imageProvider !== 'upload') {
+    setProgress(76, 'Checking for duplicate scenes...');
+    const duplicates = await runPHashDeduplication(generatedImages);
+    if (duplicates.length > 0) {
+      duplicates.forEach(d => {
+        console.warn(`[phash] Scenes ${d.sceneA} and ${d.sceneB} are ${d.similarity}% similar — regenerating scene ${d.sceneB}`);
+      });
+      // Regenerate duplicate scenes with a modified prompt
+      for (const dup of duplicates) {
+        const idx   = dup.sceneB - 1;
+        const scene = scenes[idx];
+        const newPrompt = scene.visual_prompt + ', completely different angle, different lighting, different composition';
+        const regenResp = await fetch(LOCAL_GATEWAY + '/api/images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider: imageProvider, prompt: newPrompt,
+            scene_number: scene.scene_number, scene_title: scene.title,
+            tags: lastOutput.tags || [], page: 2
+          })
+        });
+        if (regenResp.ok) {
+          const regenData = await regenResp.json();
+          generatedImages[idx] = regenData.image;
+          const card = document.getElementById('imgCard' + idx);
+          if (card && regenData.image.b64) {
+            card.innerHTML = `<img src="data:image/png;base64,${regenData.image.b64}" alt="Scene ${dup.sceneB} (regenerated)" loading="lazy" />
+              <div style="font-size:10px;color:var(--orange);padding:2px 6px;">↺ regenerated (was duplicate)</div>
+              <div class="img-card-label">Scene ${dup.sceneB}: ${scene.title}</div>`;
+          }
+          console.log(`[phash] Scene ${dup.sceneB} regenerated`);
+        }
+      }
+    }
+  }
+
+  // ── Scene duration warning ─────────────────────────────────────────────────
+  if (wordTimings.length > 0 && lastOutput?.scenes?.length) {
+    // Estimate audio duration from last word timing
+    const estimatedAudioDur = wordTimings[wordTimings.length - 1]?.end || 30;
+    const estDurations = estimateSceneDurations(lastOutput.scenes, estimatedAudioDur);
+    const longScenes = estDurations
+      .map((d, i) => ({ i, d }))
+      .filter(({ d }) => d > 7);
+    if (longScenes.length > 0) {
+      const msg = longScenes.map(({ i, d }) => `Scene ${i + 1} (~${d.toFixed(1)}s)`).join(', ');
+      console.warn(`[duration] These scenes may exceed 7s: ${msg}`);
+      showError(`⚠ Scene duration warning: ${msg} may be too long. Consider splitting the script.`);
+    }
+  }
 }
 
 function renderImageCards(images) {
@@ -1729,6 +1936,10 @@ async function assembleVideoAPI() {
       channelName,
       showIntro:   showIntro && !!channelName,
       showOutro:   showOutro && !!channelName,
+      ctaQuestion: currentCtaQuestion || '',
+      topicTag:    currentTopicTag    || '',
+      hookText:    lastOutput.hook_stat || lastOutput.scenes?.[0]?.voiceover?.split(/[.!?]/)[0] || '',
+      exportProfile: undefined, // generate both profiles
     })
   });
 
