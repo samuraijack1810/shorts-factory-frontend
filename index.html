@@ -294,18 +294,7 @@
     Script only (review before generating images)
   </button>
 
-  <!-- Fact check -->
-  <button class="secondary-btn" id="factCheckBtn" onclick="runFactCheck()" style="display:none;border-color:rgba(255,154,71,0.4);color:var(--orange);">
-    🔬 Fact-check this script →
-  </button>
-
-  <!-- Fact check results -->
-  <div id="factCheckResult" style="display:none;background:rgba(255,154,71,0.08);border:1px solid rgba(255,154,71,0.3);border-radius:var(--radius);padding:14px;margin-bottom:1rem;">
-    <div style="font-size:10px;font-family:var(--font-mono);color:var(--orange);letter-spacing:0.08em;margin-bottom:8px;">FACT CHECK RESULTS</div>
-    <div id="factCheckContent" style="font-size:13px;color:var(--text-dim);line-height:1.7;"></div>
-    <button class="secondary-btn" id="applyFactsBtn" onclick="applyFactCheckedScript()" style="margin-top:0.75rem;border-color:rgba(77,255,154,0.3);color:var(--green);display:none;">
-      ✓ Apply corrections to script
-    </button>
+  <!-- Fact-check is now integrated into script generation (no separate call)
   </div>
 
   <!-- Load existing script -->
@@ -1286,8 +1275,10 @@ async function generateScriptAPI() {
   const topic = document.getElementById('topicInput').value.trim();
   const sceneCount = getSceneCount(dur);
 
-  const systemPrompt = `You are a viral short-form video creator. Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
-{"title":"string","hook_stat":"string","total_duration":number,"scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5}],"full_voiceover_script":"string","cta_line":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}`;
+  const systemPrompt = `You are a viral short-form video creator and rigorous fact-checker. Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
+{"title":"string","hook_stat":"string","total_duration":number,"scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5}],"full_voiceover_script":"string","cta_line":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}
+
+Before finalising the JSON, internally verify every factual claim: dates, temperatures, measurements, death tolls, durations, scientific facts. If any claim cannot be verified with certainty, replace it with a verifiable alternative or remove it. Never output a fact you are not confident is accurate.`;
 
   // Word count limits — ElevenLabs reads at ~130-150wpm documentary pace.
   // These caps ensure the audio actually fits the target duration.
@@ -1316,7 +1307,7 @@ Rules:
     const resp = await fetch(LOCAL_GATEWAY + '/api/script', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system: systemPrompt, user: userPrompt })
+      body: JSON.stringify({ system: systemPrompt, user: userPrompt, wordLimit: maxWords })
     });
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
@@ -1398,104 +1389,21 @@ Rules:
       const wordCeilings = { '28': 60, '42': 91, '52': 113 };
       const wordCeiling  = wordCeilings[dur] || 60;
 
+      // Word count is enforced server-side — this is a local sanity log only
       if (totalWords > wordCeiling) {
-        throw new Error(
-          `Script too long: ${totalWords} words (${dur}s tier limit: ≤${wordCeiling} words). ` +
-          `Regenerating will give the model a stricter constraint.`
-        );
+        console.warn(`[script] Word count ${totalWords} still over ${wordCeiling} after gateway retries`);
       }
       const INTRO_DUR = showIntro ? 1.5 : 0;
       const OUTRO_DUR = showOutro ? 5.0 : 0;
       const scCount   = parsed.scenes?.length || 0;
       const estDur    = (totalWords / 130) * 60 + INTRO_DUR + OUTRO_DUR + scCount * 0.6;
-      console.log(`[script] Pre-flight OK: ~${estDur.toFixed(1)}s, ${totalWords}/${wordCeiling} words`);
+      console.log(`[script] Pre-flight: ~${estDur.toFixed(1)}s, ${totalWords}/${wordCeiling} words`);
     }
 
     break; // all checks passed
   }
 
   return parsed;
-}
-
-// ─── Fact check ──────────────────────────────
-let factCheckedScript = null;
-
-async function runFactCheck() {
-  if (!lastOutput) return;
-  const btn = document.getElementById('factCheckBtn');
-  btn.disabled = true;
-  btn.textContent = '🔬 Checking facts...';
-
-  const resultBox = document.getElementById('factCheckResult');
-  const resultContent = document.getElementById('factCheckContent');
-  resultBox.style.display = 'block';
-  resultContent.innerHTML = '<em>Analysing every factual claim...</em>';
-
-  try {
-    const voiceover = lastOutput.full_voiceover_script;
-    if (!gatewayAvailable) throw new Error('API Gateway not running. Start it: cd api-gateway && node server.js');
-
-    const systemPrompt = `You are a rigorous science fact-checker. Analyse the voiceover script for factual errors. 
-Output ONLY a JSON object: {"has_errors": boolean, "issues": [{"claim": "exact quote", "error": "what is wrong", "correction": "correct version"}], "corrected_script": "full corrected voiceover script"}
-If no errors found, set has_errors to false, issues to empty array, and corrected_script to the original.`;
-
-    const resp = await fetch(LOCAL_GATEWAY + '/api/factcheck', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system: systemPrompt,
-        user: `Fact-check this short-form video voiceover:\n\n"${voiceover}"`
-      })
-    });
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error || 'Fact-check error ' + resp.status);
-    }
-    const data = await resp.json();
-    const raw = data.content.map(b => b.text || '').join('').replace(/```json|```/g, '').trim();
-    const result = JSON.parse(raw);
-
-    if (!result.has_errors) {
-      resultContent.innerHTML = '<span style="color:var(--green);">✓ No factual errors found — script looks accurate!</span>';
-      document.getElementById('applyFactsBtn').style.display = 'none';
-    } else {
-      let html = '';
-      result.issues.forEach(issue => {
-        html += `<div style="margin-bottom:12px;padding:10px;background:rgba(255,77,77,0.08);border-radius:6px;border-left:2px solid rgba(255,77,77,0.4);">
-          <div style="font-size:11px;font-family:var(--font-mono);color:#FF8080;margin-bottom:4px;">ISSUE</div>
-          <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">"${issue.claim}"</div>
-          <div style="font-size:12px;color:#FF8080;margin-bottom:4px;">✕ ${issue.error}</div>
-          <div style="font-size:12px;color:var(--green);">✓ ${issue.correction}</div>
-        </div>`;
-      });
-      resultContent.innerHTML = html;
-      factCheckedScript = result.corrected_script;
-      document.getElementById('applyFactsBtn').style.display = 'block';
-    }
-
-  } catch(e) {
-    resultContent.innerHTML = `<span style="color:var(--red);">Error: ${e.message}</span>`;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '🔬 Fact-check this script →';
-  }
-}
-
-function applyFactCheckedScript() {
-  if (!factCheckedScript || !lastOutput) return;
-  lastOutput.full_voiceover_script = factCheckedScript;
-
-  // Also update scene voiceovers proportionally
-  // Just update the full script — individual scene voiceovers need manual review
-  const btn = document.getElementById('applyFactsBtn');
-  btn.textContent = '✓ Corrections applied';
-  btn.disabled = true;
-  btn.style.background = 'rgba(77,255,154,0.1)';
-
-  // Show notification
-  const content = document.getElementById('factCheckContent');
-  content.innerHTML += '<div style="margin-top:10px;padding:8px 10px;background:rgba(77,255,154,0.08);border-radius:6px;font-size:12px;color:var(--green);">✓ Full voiceover script updated. Re-generate voiceover to apply changes.</div>';
 }
 
 // ─── Voiceover API call ───────────────────────
@@ -2076,11 +1984,6 @@ function renderOutput(out) {
   // Reset uploads for new script
   uploadedImages = {};
   if (imageProvider === 'upload') buildUploadSlots();
-  // Show fact-check button, reset previous results
-  document.getElementById('factCheckBtn').style.display = 'block';
-  document.getElementById('factCheckResult').style.display = 'none';
-  document.getElementById('applyFactsBtn').style.display = 'none';
-  factCheckedScript = null;
   // Update music keyword suggestions for this script
   updateMusicKeywords();
 }
