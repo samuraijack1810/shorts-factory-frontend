@@ -1276,7 +1276,15 @@ async function generateScriptAPI() {
   const sceneCount = getSceneCount(dur);
 
   const systemPrompt = `You are a viral short-form video creator and rigorous fact-checker. Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
-{"title":"string","hook_stat":"string","total_duration":number,"scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5}],"full_voiceover_script":"string","cta_line":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}
+{"title":"string","hook_stat":"string","total_duration":number,"scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5}],"full_voiceover_script":"string","cta_line":"string","cta_question":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}
+
+The "cta_question" field must be a single engaging question that invites viewers to comment — e.g. "Which of these facts surprised you most?" Keep it under 12 words.
+
+The hook (Scene 1 opening line) MUST use exactly one of these four structures:
+1. "[Shocking fact or event] — here's why"
+2. "[Group] did [dark/surprising thing] — and history buried it"
+3. "Most people don't know [surprising fact]..."
+4. "[Number] [topic] secrets they don't teach in school"
 
 Before finalising the JSON, internally verify every factual claim: dates, temperatures, measurements, death tolls, durations, scientific facts. If any claim cannot be verified with certainty, replace it with a verifiable alternative or remove it. Never output a fact you are not confident is accurate.`;
 
@@ -1285,13 +1293,13 @@ Before finalising the JSON, internally verify every factual claim: dates, temper
   const wordLimits = { '28': 60, '42': 91, '52': 113 };
   const maxWords = wordLimits[dur] || 60;
 
-  let userPrompt = `Create a YouTube/Instagram Shorts script (${dur}s narration target) about: "${topic}"
+  const userPrompt = `Create a YouTube/Instagram Shorts script (${dur}s narration target) about: "${topic}"
 Category: ${cat}. Niche: ${niche}.
 Rules:
 - Exactly ${sceneCount} scenes total — scene count must match exactly
 - HARD WORD LIMIT: full_voiceover_script must be ${maxWords} words or fewer. Count every word before finishing. This is the most important rule — ElevenLabs reads at ~140wpm so ${maxWords} words = ~${dur} seconds of audio.
 - Keep each scene to 2-4 seconds max — short-form audiences need fast visual cuts
-- Scene 1: punchy 2-3s scroll-stopping hook, no longer
+- Scene 1: punchy 2-3s scroll-stopping hook using one of the four required hook structures
 - Every factual claim must be 100% scientifically accurate — double check numbers, temperatures, dates
 - Fast breathless narration — no filler words, no padding
 - Final scene: clever subscribe CTA (2-3s max)
@@ -1299,109 +1307,44 @@ Rules:
 - duration_seconds: must reflect actual scene length (2-4s typically)
 - full_voiceover_script: all voiceover lines as one continuous paragraph — must be ${maxWords} words or fewer`;
 
-  const MAX_REGEN = 2;
-  let attempt = 0;
-  let parsed;
-
-  while (attempt <= MAX_REGEN) {
-    const resp = await fetch(LOCAL_GATEWAY + '/api/script', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system: systemPrompt, user: userPrompt, wordLimit: maxWords })
-    });
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error || 'Script API error ' + resp.status);
-    }
-    const data = await resp.json();
-    const raw  = data.content.map(b => b.text || '').join('');
-    parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
-
-    // ── Topic focus validation ──────────────────────────────────────────────
-    const scriptText = parsed.full_voiceover_script || parsed.scenes?.map(s => s.voiceover).join(' ') || '';
-    try {
-      const topicResp = await fetch(LOCAL_GATEWAY + '/api/topic-validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scriptText })
-      });
-      if (topicResp.ok) {
-        const topicData = await topicResp.json();
-        currentTopicTag = topicData.topicTag || '';
-        if (!topicData.singleTopic) {
-          attempt++;
-          if (attempt > MAX_REGEN) throw new Error('Script keeps covering multiple topics. Narrow your topic and try again.');
-          console.warn(`[script] MULTI_TOPIC detected — regenerating (attempt ${attempt})`);
-          userPrompt += '\n\nFocus on exactly ONE historical mystery or event. Do not combine multiple unrelated topics in a single video.';
-          continue;
-        }
-        console.log(`[script] Topic validated: ${topicData.topicTag}`);
-      }
-    } catch (e) {
-      if (e.message.includes('MULTI_TOPIC') || e.message.includes('multiple topics')) throw e;
-      console.warn('[script] Topic validation skipped:', e.message);
-    }
-
-    // ── Hook structure validation ──────────────────────────────────────────
-    const hookLine = parsed.hook_stat || parsed.scenes?.[0]?.voiceover?.split('.')[0] || '';
-    const HOOK_PATTERNS = [
-      /^.+\s*[—–-]\s*here'?s why/i,
-      /^.+\s+did\s+.+\s*[—–-]\s*and\s+history\s+buried\s+it/i,
-      /^most\s+people\s+don'?t\s+know\s+/i,
-      /^\d+\s+.+\s+secrets?\s+they\s+don'?t\s+teach/i,
-    ];
-    const hookValid = HOOK_PATTERNS.some(p => p.test(hookLine.trim()));
-    if (!hookValid) {
-      attempt++;
-      if (attempt > MAX_REGEN) {
-        console.warn('[script] Hook pattern did not match after retries — proceeding anyway');
-        break;
-      }
-      console.warn(`[script] Hook invalid: "${hookLine}" — regenerating (attempt ${attempt})`);
-      userPrompt += `\n\nThe hook (Scene 1 opening line) MUST match one of these structures:\n- "[Shocking fact] — here's why"\n- "[Group] did [dark thing] — and history buried it"\n- "Most people don't know [fact]..."\n- "[Number] [topic] secrets they don't teach in school"`;
-      continue;
-    }
-    console.log(`[script] Hook validated: "${hookLine}"`);
-
-    // ── CTA engagement question ────────────────────────────────────────────
-    currentCtaQuestion = '';
-    try {
-      const ctaResp = await fetch(LOCAL_GATEWAY + '/api/cta-question', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: topic || parsed.title })
-      });
-      if (ctaResp.ok) {
-        const ctaData = await ctaResp.json();
-        currentCtaQuestion = ctaData.question || '';
-        console.log(`[script] CTA question: "${currentCtaQuestion}"`);
-      }
-    } catch (e) {
-      console.warn('[script] CTA question generation skipped:', e.message);
-    }
-
-    // ── Pre-flight word count gate ─────────────────────────────────────────
-    {
-      const voiceText   = parsed.full_voiceover_script ||
-                          parsed.scenes?.map(s => s.voiceover).join(' ') || '';
-      const totalWords  = voiceText.trim().split(/\s+/).filter(Boolean).length;
-      // Per-tier word ceilings (28s=60w, 42s=91w, 52s=113w)
-      const wordCeilings = { '28': 60, '42': 91, '52': 113 };
-      const wordCeiling  = wordCeilings[dur] || 60;
-
-      // Word count is enforced server-side — this is a local sanity log only
-      if (totalWords > wordCeiling) {
-        console.warn(`[script] Word count ${totalWords} still over ${wordCeiling} after gateway retries`);
-      }
-      const INTRO_DUR = showIntro ? 1.5 : 0;
-      const OUTRO_DUR = showOutro ? 5.0 : 0;
-      const scCount   = parsed.scenes?.length || 0;
-      const estDur    = (totalWords / 130) * 60 + INTRO_DUR + OUTRO_DUR + scCount * 0.6;
-      console.log(`[script] Pre-flight: ~${estDur.toFixed(1)}s, ${totalWords}/${wordCeiling} words`);
-    }
-
-    break; // all checks passed
+  const resp = await fetch(LOCAL_GATEWAY + '/api/script', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system: systemPrompt, user: userPrompt, wordLimit: maxWords })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || 'Script API error ' + resp.status);
   }
+  const data = await resp.json();
+  const raw  = data.content.map(b => b.text || '').join('');
+  const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+
+  // ── CTA question — read from JSON (no extra API call) ─────────────────
+  currentCtaQuestion = parsed.cta_question || '';
+  if (currentCtaQuestion) console.log(`[script] CTA question: "${currentCtaQuestion}"`);
+
+  // ── Topic tag — fire-and-forget Haiku call, never blocks or regenerates ─
+  const scriptText = parsed.full_voiceover_script || parsed.scenes?.map(s => s.voiceover).join(' ') || '';
+  fetch(LOCAL_GATEWAY + '/api/topic-validate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scriptText })
+  }).then(r => r.ok ? r.json() : null).then(d => {
+    if (d) {
+      currentTopicTag = d.topicTag || '';
+      if (!d.singleTopic) console.warn('[script] Multi-topic detected (not blocking):', currentTopicTag);
+      else console.log('[script] Topic tag:', currentTopicTag);
+    }
+  }).catch(e => console.warn('[script] Topic validation skipped:', e.message));
+
+  // ── Pre-flight word count log ──────────────────────────────────────────
+  const voiceText  = parsed.full_voiceover_script || parsed.scenes?.map(s => s.voiceover).join(' ') || '';
+  const totalWords = voiceText.trim().split(/\s+/).filter(Boolean).length;
+  const INTRO_DUR  = showIntro ? 1.5 : 0;
+  const OUTRO_DUR  = showOutro ? 5.0 : 0;
+  const estDur     = (totalWords / 130) * 60 + INTRO_DUR + OUTRO_DUR + (parsed.scenes?.length || 0) * 0.6;
+  console.log(`[script] ${totalWords}/${maxWords} words · ~${estDur.toFixed(1)}s estimated`);
 
   return parsed;
 }
