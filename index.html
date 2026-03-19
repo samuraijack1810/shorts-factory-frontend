@@ -1294,7 +1294,7 @@ async function generateScriptAPI() {
   const wordLimits = { '28': 60, '42': 91, '52': 113 };
   const maxWords = wordLimits[dur] || 60;
 
-  const userPrompt = `Create a YouTube/Instagram Shorts script (${dur}s narration target) about: "${topic}"
+  let userPrompt = `Create a YouTube/Instagram Shorts script (${dur}s narration target) about: "${topic}"
 Category: ${cat}. Niche: ${niche}.
 Rules:
 - Exactly ${sceneCount} scenes total — scene count must match exactly
