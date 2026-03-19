@@ -1288,10 +1288,11 @@ The hook (Scene 1 opening line) MUST use exactly one of these four structures:
 
 Before finalising the JSON, internally verify every factual claim: dates, temperatures, measurements, death tolls, durations, scientific facts. If any claim cannot be verified with certainty, replace it with a verifiable alternative or remove it. Never output a fact you are not confident is accurate.`;
 
-  // Word count limits — ElevenLabs reads at ~130-150wpm documentary pace.
-  // These caps ensure the audio actually fits the target duration.
-  const wordLimits = { '28': 60, '42': 91, '52': 113 };
-  const maxWords = wordLimits[dur] || 60;
+  // Prompted targets are eased ~15% below the hard ceiling so Claude lands
+  // under the limit on the first attempt — no retries needed.
+  // Hard ceilings: 28s=60w, 42s=91w, 52s=113w
+  const wordLimits = { '28': 50, '42': 77, '52': 96 };
+  const maxWords = wordLimits[dur] || 50;
 
   const userPrompt = `Create a YouTube/Instagram Shorts script (${dur}s narration target) about: "${topic}"
 Category: ${cat}. Niche: ${niche}.
