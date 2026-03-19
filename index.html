@@ -1305,7 +1305,7 @@ Rules:
 - Fast breathless narration — no filler words, no padding
 - Final scene: clever subscribe CTA (2-3s max)
 - Visual prompts: cinematic, hyper-realistic, 9:16 vertical, no text in frame, mobile safe zones
-- duration_seconds: must reflect actual scene length (2-4s typically)
+- duration_seconds: must reflect actual scene length, 2–6s max per scene, never exceed 6s
 - full_voiceover_script: all voiceover lines as one continuous paragraph — must be ${maxWords} words or fewer`;
 
   const resp = await fetch(LOCAL_GATEWAY + '/api/script', {
@@ -1501,12 +1501,14 @@ async function generateImagesAPI() {
     const labelEl = document.getElementById('imgLabel' + i);
     if (labelEl) labelEl.textContent = `Scene ${scene.scene_number} — generating... (${i+1}/${scenes.length})`;
 
+    const visualPrompt = scene.visual_prompt?.trim() ||
+      `${scene.title}, cinematic hyper-realistic 9:16 vertical shot, no text in frame`;
     const resp = await fetch(LOCAL_GATEWAY + '/api/images', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         provider: imageProvider,
-        prompt: scene.visual_prompt,
+        prompt: visualPrompt,
         scene_number: scene.scene_number,
         scene_title: scene.title,
         tags: lastOutput.tags || [],
@@ -1557,7 +1559,8 @@ async function generateImagesAPI() {
       for (const dup of duplicates) {
         const idx   = dup.sceneB - 1;
         const scene = scenes[idx];
-        const newPrompt = scene.visual_prompt + ', completely different angle, different lighting, different composition';
+        const basePrompt = scene.visual_prompt?.trim() || `${scene.title}, cinematic hyper-realistic 9:16 vertical shot`;
+        const newPrompt = basePrompt + ', completely different angle, different lighting, different composition';
         const regenResp = await fetch(LOCAL_GATEWAY + '/api/images', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
