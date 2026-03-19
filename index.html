@@ -1517,7 +1517,12 @@ async function generateImagesAPI() {
     });
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({ error: 'Image generation failed' }));
-      throw new Error(`Scene ${scene.scene_number}: ${err.error || 'error ' + resp.status}`);
+      console.warn(`[images] Scene ${scene.scene_number} failed: ${err.error || resp.status} — skipping`);
+      generatedImages.push({ scene_number: scene.scene_number, title: scene.title, b64: null, url: null, failed: true });
+      const card = document.getElementById('imgCard' + i);
+      if (card) card.innerHTML = `<div class="img-generating" style="color:var(--orange)">⚠ Scene ${scene.scene_number} blocked — upload manually</div><div class="img-card-label">Scene ${scene.scene_number}: ${scene.title}</div>`;
+      setProgress(40 + Math.round((i + 1) / scenes.length * 35), `Scene ${i+1} skipped — continuing...`);
+      continue;
     }
     const data = await resp.json();
     const img = data.image;
