@@ -232,10 +232,10 @@
         </select>
       </div>
       <div class="opt-group"><label>DURATION</label>
-        <select id="durSelect" onchange="updateSceneRecommendation()">
-          <option value="30">~30 seconds</option>
-          <option value="45" selected>~45 seconds</option>
-          <option value="60">~60 seconds</option>
+        <select id="durSelect" onchange="updateDerivedValues()">
+          <option value="28">Short · 28s narration</option>
+          <option value="42" selected>Mid · 42s narration</option>
+          <option value="52">Long · 52s narration</option>
         </select>
       </div>
       <div class="opt-group"><label>TONE</label>
@@ -254,13 +254,10 @@
           <option value="human nature">Human nature</option>
         </select>
       </div>
-      <div class="opt-group"><label>SCENES</label>
-        <select id="sceneCount" onchange="updateCostSummary()">
-          <option value="3">3 scenes</option>
-          <option value="4" selected>4 scenes</option>
-          <option value="5">5 scenes</option>
-          <option value="6">6 scenes</option>
-        </select>
+      <div class="opt-group"><label>IMAGES</label>
+        <div id="sceneSummaryLabel" style="font-size:12px;font-family:var(--font-mono);color:var(--text-muted);padding:6px 0;line-height:1.8;">
+          6 images · ~48s · $0.24
+        </div>
       </div>
       <div class="opt-group"><label>IMAGE SOURCE</label>
         <select id="providerSelect" onchange="updateCostSummary()">
@@ -421,12 +418,12 @@
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem;">
         <div class="provider-card active" id="prov-dalle3" onclick="selectProvider('dalle3')">
           <div class="prov-name">DALL-E 3</div>
-          <div class="prov-cost">$0.16 / video</div>
+          <div class="prov-cost">$0.04 / image</div>
           <div class="prov-tag">Best quality</div>
         </div>
         <div class="provider-card" id="prov-dalle2" onclick="selectProvider('dalle2')">
           <div class="prov-name">DALL-E 2</div>
-          <div class="prov-cost">$0.02 / video</div>
+          <div class="prov-cost">$0.005 / image</div>
           <div class="prov-tag">Lower quality</div>
         </div>
         <div class="provider-card" id="prov-pexels" onclick="selectProvider('pexels')">
@@ -674,7 +671,9 @@ const VOICE_COST = 0.017;
 const SCRIPT_COST = 0.02;
 
 function updateCostSummary() {
-  const scenes = parseInt(document.getElementById('sceneCount').value);
+  const dur      = document.getElementById('durSelect').value;
+  const scenes   = getSceneCount(dur);
+  const expDur   = getExpectedDuration(dur);
   const provider = document.getElementById('providerSelect').value;
   imageProvider = provider;
 
@@ -692,6 +691,15 @@ function updateCostSummary() {
   document.getElementById('cVoice').textContent = '$' + VOICE_COST.toFixed(3);
   document.getElementById('cImages').textContent = provider === 'pexels' ? 'Free' : '$' + imgCost.toFixed(3);
   document.getElementById('cTotal').textContent = provider === 'pexels' ? '$' + (SCRIPT_COST + VOICE_COST).toFixed(3) : '$' + total.toFixed(3);
+
+  // Update computed scene summary label
+  const summaryLabel = document.getElementById('sceneSummaryLabel');
+  if (summaryLabel) {
+    const imgCostStr = provider === 'pexels' || provider === 'upload'
+      ? 'Free'
+      : `$${(IMG_COSTS[provider] * scenes).toFixed(2)}`;
+    summaryLabel.textContent = `${scenes} images · ~${expDur.toFixed(0)}s · ${imgCostStr}`;
+  }
 
   // Update inline cost label in images section if visible
   const imgLabel = document.getElementById('imgCostLabel');
@@ -899,15 +907,25 @@ function handleVoUpload(event) {
   event.target.value = '';
 }
 
-function updateSceneRecommendation() {
-  const dur = parseInt(document.getElementById('durSelect').value);
-  const sceneSelect = document.getElementById('sceneCount');
-  // Recommend scene count based on duration
-  if (dur <= 30) sceneSelect.value = '3';
-  else if (dur <= 45) sceneSelect.value = '4';
-  else sceneSelect.value = '5';
+// Returns image count for a given narration duration tier (28/42/52)
+function getSceneCount(dur) {
+  const counts = { '28': 4, '42': 6, '52': 8 };
+  return counts[String(dur)] || 6;
+}
+
+// Returns expected total video duration (narration + intro 1.5s + outro 5s)
+function getExpectedDuration(dur) {
+  const durations = { '28': 34.5, '42': 48.5, '52': 58.5 };
+  return durations[String(dur)] || 48.5;
+}
+
+// Called when duration tier or provider changes — updates scene summary label + cost
+function updateDerivedValues() {
   updateCostSummary();
 }
+
+// Keep old name as alias for any calls that remain
+function updateSceneRecommendation() { updateDerivedValues(); }
 
 // ─── Background music upload ──────────────────
 function handleMusicUpload(event) {
@@ -1266,17 +1284,17 @@ async function generateScriptAPI() {
   const tone = document.getElementById('toneSelect').value;
   const niche = document.getElementById('nicheSelect').value;
   const topic = document.getElementById('topicInput').value.trim();
-  const sceneCount = document.getElementById('sceneCount').value;
+  const sceneCount = getSceneCount(dur);
 
   const systemPrompt = `You are a viral short-form video creator. Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
 {"title":"string","hook_stat":"string","total_duration":number,"scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5}],"full_voiceover_script":"string","cta_line":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}`;
 
   // Word count limits — ElevenLabs reads at ~130-150wpm documentary pace.
   // These caps ensure the audio actually fits the target duration.
-  const wordLimits = { '30': 65, '45': 95, '60': 125 };
-  const maxWords = wordLimits[dur] || 65;
+  const wordLimits = { '28': 60, '42': 91, '52': 113 };
+  const maxWords = wordLimits[dur] || 60;
 
-  const userPrompt = `Create a ${dur}-second ${tone} YouTube/Instagram Shorts script about: "${topic}"
+  const userPrompt = `Create a YouTube/Instagram Shorts script (${dur}s narration target) about: "${topic}"
 Category: ${cat}. Niche: ${niche}.
 Rules:
 - Exactly ${sceneCount} scenes total — scene count must match exactly
@@ -1369,6 +1387,28 @@ Rules:
       }
     } catch (e) {
       console.warn('[script] CTA question generation skipped:', e.message);
+    }
+
+    // ── Pre-flight word count gate ─────────────────────────────────────────
+    {
+      const voiceText   = parsed.full_voiceover_script ||
+                          parsed.scenes?.map(s => s.voiceover).join(' ') || '';
+      const totalWords  = voiceText.trim().split(/\s+/).filter(Boolean).length;
+      // Per-tier word ceilings (28s=60w, 42s=91w, 52s=113w)
+      const wordCeilings = { '28': 60, '42': 91, '52': 113 };
+      const wordCeiling  = wordCeilings[dur] || 60;
+
+      if (totalWords > wordCeiling) {
+        throw new Error(
+          `Script too long: ${totalWords} words (${dur}s tier limit: ≤${wordCeiling} words). ` +
+          `Regenerating will give the model a stricter constraint.`
+        );
+      }
+      const INTRO_DUR = showIntro ? 1.5 : 0;
+      const OUTRO_DUR = showOutro ? 5.0 : 0;
+      const scCount   = parsed.scenes?.length || 0;
+      const estDur    = (totalWords / 130) * 60 + INTRO_DUR + OUTRO_DUR + scCount * 0.6;
+      console.log(`[script] Pre-flight OK: ~${estDur.toFixed(1)}s, ${totalWords}/${wordCeiling} words`);
     }
 
     break; // all checks passed
@@ -1575,8 +1615,8 @@ function selectProvider(p) {
   const imagesBtn = document.getElementById('imagesBtn');
   if (imagesBtn) imagesBtn.textContent = p === 'upload' ? 'Use uploaded images →' : 'Generate images →';
   const labels = {
-    dalle3: '~$0.04 per image · 4 scenes = ~$0.16',
-    dalle2: '~$0.005 per image · 4 scenes = ~$0.02',
+    dalle3: '~$0.04 per image',
+    dalle2: '~$0.005 per image',
     pexels: 'Free — real photos from Pexels',
     upload: 'Free — your own images'
   };
@@ -2127,19 +2167,6 @@ function loadScriptFromFile(event) {
       lastOutput._loadedFromFile = true; // script cost = $0
       hideError();
 
-      // Sync scene count dropdown to match loaded script
-      const sceneCount = parsed.scenes.length.toString();
-      const sceneSelect = document.getElementById('sceneCount');
-      // Add option dynamically if count not in list (e.g. 6 scenes)
-      if (sceneSelect) {
-        if (![...sceneSelect.options].some(o => o.value === sceneCount)) {
-          const opt = document.createElement('option');
-          opt.value = sceneCount;
-          opt.textContent = sceneCount + ' scenes';
-          sceneSelect.appendChild(opt);
-        }
-        sceneSelect.value = sceneCount;
-      }
 
       // Sync duration dropdown to match loaded script
       const dur = parsed.total_duration?.toString();
