@@ -588,6 +588,13 @@
           </div>
           <button class="dl-video-btn" id="dlVideoBtn">↓ Download MP4</button>
         </div>
+        <div id="thumbnailOutput" style="display:none;margin-top:10px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Thumbnail · Scene 1</div>
+          <div style="display:flex;align-items:flex-start;gap:12px;">
+            <img id="thumbnailImg" src="" alt="Thumbnail" style="width:90px;height:160px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,255,255,0.1);" />
+            <a id="dlThumbnailBtn" href="#" download style="display:inline-block;margin-top:4px;padding:6px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);text-decoration:none;">↓ Download PNG</a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1852,6 +1859,7 @@ async function assembleVideoAPI() {
     throw new Error(err.error || 'Assembly error ' + resp.status);
   }
 
+  const thumbFilename = resp.headers.get('X-Thumbnail-Filename');
   const videoBlob = await resp.blob();
   const url = URL.createObjectURL(videoBlob);
   const safeTitle = (lastOutput.title || 'video').replace(/[^a-z0-9]+/gi, '_').toLowerCase();
@@ -1867,6 +1875,16 @@ async function assembleVideoAPI() {
     a.download = filename;
     a.click();
   };
+
+  // Show thumbnail if assembler returned one
+  if (thumbFilename) {
+    const thumbUrl = `${LOCAL_ASSEMBLER}/output/${thumbFilename}`;
+    document.getElementById('thumbnailImg').src = thumbUrl;
+    document.getElementById('dlThumbnailBtn').href = thumbUrl;
+    document.getElementById('dlThumbnailBtn').download = thumbFilename;
+    document.getElementById('thumbnailOutput').style.display = 'block';
+  }
+
   document.getElementById('videoOutput').classList.add('visible');
 }
 
