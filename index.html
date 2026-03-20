@@ -1034,6 +1034,9 @@ window.onload = () => {
   checkGateway();
   loadChannelName();
   prefillChannelNameFromGateway();
+  // Restore word timings from previous session so assembly uses exact timestamps
+  const saved = sessionStorage.getItem('wordTimings');
+  if (saved) { try { wordTimings = JSON.parse(saved); } catch (_) {} }
 };
 
 // Fetch CHANNEL_NAME from gateway and prefill the input (if not already set by user)
@@ -1396,6 +1399,7 @@ async function generateVoiceoverAPI() {
   const data = await resp.json();
   audioB64    = data.audioB64;
   wordTimings = data.wordTimings || [];
+  if (wordTimings.length > 0) sessionStorage.setItem('wordTimings', JSON.stringify(wordTimings));
 
   // Reconstruct blob for playback
   const bytes = Uint8Array.from(atob(audioB64), c => c.charCodeAt(0));
