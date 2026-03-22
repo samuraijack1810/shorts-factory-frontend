@@ -261,11 +261,23 @@
       </div>
       <div class="opt-group"><label>IMAGE SOURCE</label>
         <select id="providerSelect" onchange="updateCostSummary()">
-          <option value="dalle3">DALL-E 3 ($0.04/img)</option>
+          <option value="dalle3">DALL-E 3 ($0.08/img HD · $0.04/img SD)</option>
           <option value="dalle2">DALL-E 2 ($0.005/img)</option>
           <option value="pexels">Pexels (free)</option>
           <option value="upload">Upload my photos (free)</option>
         </select>
+      </div>
+      <div class="opt-group" id="dalle3QualityGroup"><label>DALL-E 3 QUALITY</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div class="provider-card active" id="quality-hd" onclick="selectDalleQuality('hd')" style="padding:8px 10px;">
+            <div class="prov-name" style="font-size:12px;">HD</div>
+            <div class="prov-cost" style="font-size:10px;">$0.08 / img</div>
+          </div>
+          <div class="provider-card" id="quality-sd" onclick="selectDalleQuality('standard')" style="padding:8px 10px;">
+            <div class="prov-name" style="font-size:12px;">Standard</div>
+            <div class="prov-cost" style="font-size:10px;">$0.04 / img</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -366,11 +378,21 @@
           <div class="opt-group">
             <label>VOICE</label>
             <select id="voiceSelect">
-              <option value="Rachel">Rachel (calm, clear)</option>
-              <option value="Adam">Adam (deep, authoritative)</option>
-              <option value="Bella">Bella (warm, engaging)</option>
-              <option value="Antoni">Antoni (energetic, fast)</option>
-              <option value="Josh">Josh (documentary style)</option>
+              <option value="Rachel">Rachel — calm, clear female</option>
+              <option value="Adam">Adam — deep, authoritative male</option>
+              <option value="Bella">Bella — warm, engaging female</option>
+              <option value="Antoni">Antoni — energetic male</option>
+              <option value="Josh">Josh — documentary male</option>
+              <option value="Sam">Sam — raspy young male</option>
+              <option value="Domi">Domi — strong female</option>
+              <option value="Elli">Elli — young emotional female</option>
+              <option value="Callum">Callum — intense transatlantic male</option>
+              <option value="Charlotte">Charlotte — Swedish female</option>
+              <option value="Patrick">Patrick — American male</option>
+              <option value="Thomas">Thomas — calm British male</option>
+              <option value="Joseph">Joseph — deep British narrator ✦ Cosmic Dread</option>
+              <option value="Arnold">Arnold — gravelly, commanding ✦ Cosmic Dread</option>
+              <option value="Daniel">Daniel — deep British ✦ Cosmic Dread</option>
             </select>
           </div>
           <button class="blue-btn" id="voBtn" onclick="generateVoiceover()">Generate voiceover →</button>
@@ -483,6 +505,21 @@
             <div class="prov-cost">Vertical</div>
             <div class="prov-tag">floats up</div>
           </div>
+          <div class="provider-card" id="motion-driftdown" onclick="selectMotion('driftdown')">
+            <div class="prov-name">Drift down</div>
+            <div class="prov-cost">Vertical</div>
+            <div class="prov-tag">sinks into void</div>
+          </div>
+          <div class="provider-card" id="motion-slowzoom" onclick="selectMotion('slowzoom')">
+            <div class="prov-name">Slow zoom</div>
+            <div class="prov-cost">Minimal travel</div>
+            <div class="prov-tag">deep space</div>
+          </div>
+          <div class="provider-card" id="motion-cosmicmixed" onclick="selectMotion('cosmicmixed')">
+            <div class="prov-name">✦ Cosmic</div>
+            <div class="prov-cost">Slow drifts only</div>
+            <div class="prov-tag">Cosmic Dread</div>
+          </div>
           <div class="provider-card" id="motion-static" onclick="selectMotion('static')" style="grid-column:span 3;">
             <div class="prov-name">All static</div>
             <div class="prov-cost">Fastest assembly · no movement</div>
@@ -533,6 +570,22 @@
       <!-- Channel name + intro/outro -->
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:1rem;">
         <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em;margin-bottom:10px;">CHANNEL BRANDING</div>
+
+        <!-- Channel profile selector -->
+        <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:6px;">CHANNEL PROFILE</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div class="provider-card active" id="profile-historymystery181" onclick="applyChannelProfile('historymystery181')" style="padding:10px 12px;">
+            <div class="prov-name" style="font-size:12px;">History Mystery</div>
+            <div class="prov-cost" style="font-size:10px;">historymystery181</div>
+            <div class="prov-tag" style="font-size:9px;color:var(--accent);">■ #E8FF47</div>
+          </div>
+          <div class="provider-card" id="profile-cosmic_dread" onclick="applyChannelProfile('cosmic_dread')" style="padding:10px 12px;">
+            <div class="prov-name" style="font-size:12px;">✦ Cosmic Dread</div>
+            <div class="prov-cost" style="font-size:10px;">deep space horror</div>
+            <div class="prov-tag" style="font-size:9px;color:#FF3B6B;">■ #FF3B6B</div>
+          </div>
+        </div>
+
         <div style="margin-bottom:10px;">
           <label style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);display:block;margin-bottom:5px;">CHANNEL NAME</label>
           <input type="text" id="channelNameInput" placeholder="e.g. MindBlown Facts"
@@ -628,6 +681,7 @@ let wordTimings = []; // [{word, start, end}] from ElevenLabs word timestamps
 let generatedImages = [];
 let pexelsPageMap = {};  // tracks which page each scene is on for refresh
 let imageProvider = 'dalle3';
+let imageQuality  = 'hd'; // 'hd' | 'standard' — DALL-E 3 only
 let motionMode = 'mixed';
 let showTextOverlay = true;
 let voSource = 'elevenlabs';
@@ -662,9 +716,58 @@ function updateActualCost() {
 
   bar.style.display = 'block';
 }
-const IMG_COSTS = { dalle3: 0.04, dalle2: 0.005, pexels: 0, upload: 0 };
+const IMG_COSTS = { dalle3: 0.08, dalle2: 0.005, pexels: 0, upload: 0 };
 const VOICE_COST = 0.017;
 const SCRIPT_COST = 0.02;
+
+// ─── Channel profiles ─────────────────────────────────────────────────────────
+const CHANNEL_PROFILES = {
+  historymystery181: {
+    scriptMode:    'default',
+    accentColor:   '#E8FF47',
+    imagePrefix:   '',
+    defaultMotion: 'mixed',
+    defaultVoice:  'Rachel',
+    stability:     0.5,
+    similarity:    0.75,
+  },
+  cosmic_dread: {
+    scriptMode:    'cosmic_dread',
+    accentColor:   '#FF3B6B',
+    imagePrefix:   'Ultra-detailed painterly deep space horror art, Greg Rutkowski meets sci-fi horror, 9:16 vertical portrait,',
+    defaultMotion: 'cosmicmixed',
+    defaultVoice:  'Joseph',
+    stability:     0.35,
+    similarity:    0.85,
+  }
+};
+
+let activeProfile = 'historymystery181';
+
+function applyChannelProfile(key) {
+  const profile = CHANNEL_PROFILES[key];
+  if (!profile) return;
+  activeProfile      = key;
+  channelScriptMode  = profile.scriptMode;
+  channelAccentColor = profile.accentColor;
+  channelImagePrefix = profile.imagePrefix;
+  selectMotion(profile.defaultMotion);
+  const voiceEl = document.getElementById('voiceSelect');
+  if (voiceEl) voiceEl.value = profile.defaultVoice;
+  ['historymystery181', 'cosmic_dread'].forEach(k => {
+    const el = document.getElementById('profile-' + k);
+    if (el) el.classList.toggle('active', k === key);
+  });
+  console.log(`[channel] Profile: ${key} | Mode: ${profile.scriptMode} | Accent: ${profile.accentColor}`);
+}
+
+function selectDalleQuality(quality) {
+  imageQuality = quality;
+  IMG_COSTS.dalle3 = quality === 'hd' ? 0.08 : 0.04;
+  document.getElementById('quality-hd')?.classList.toggle('active', quality === 'hd');
+  document.getElementById('quality-sd')?.classList.toggle('active', quality === 'standard');
+  updateCostSummary();
+}
 
 function updateCostSummary() {
   const dur      = document.getElementById('durSelect').value;
@@ -678,7 +781,10 @@ function updateCostSummary() {
     const card = document.getElementById('prov-' + id);
     if (card) card.classList.toggle('active', id === provider);
   });
-  // pexelsKeyWrap removed — Pexels key lives on backend
+
+  // Show DALL-E 3 quality toggle only when DALL-E 3 is selected
+  const qualityGroup = document.getElementById('dalle3QualityGroup');
+  if (qualityGroup) qualityGroup.style.display = provider === 'dalle3' ? '' : 'none';
 
   const imgCost = IMG_COSTS[provider] * scenes;
   const total = SCRIPT_COST + VOICE_COST + imgCost;
@@ -779,18 +885,21 @@ function getUploadReadyCount() {
 
 function selectMotion(mode) {
   motionMode = mode;
-  ['mixed','zoom','zoomout','panleft','panright','driftup','static'].forEach(m => {
+  ['mixed','zoom','zoomout','panleft','panright','driftup','driftdown','slowzoom','cosmicmixed','static'].forEach(m => {
     const el = document.getElementById('motion-' + m);
     if (el) el.classList.toggle('active', m === mode);
   });
   const descs = {
-    mixed:    'Mixed: cycles through all effects — zoom in, zoom out, pan left, pan right, drift up, with static on CTA',
-    zoom:     'Zoom in: Ken Burns slow zoom in on every scene — pulls the viewer closer',
-    zoomout:  'Zoom out: Ken Burns slow zoom out — starts close, reveals the scene',
-    panleft:  'Pan left: slow horizontal drift left across every scene',
-    panright: 'Pan right: slow horizontal drift right across every scene',
-    driftup:  'Drift up: slow vertical float upward — great for tall portrait images',
-    static:   'All static: clean still cuts with crossfade — fastest assembly, minimal distraction'
+    mixed:        'Mixed: cycles through all effects — zoom in, zoom out, pan left, pan right, drift up',
+    zoom:         'Zoom in: Ken Burns slow zoom in on every scene — pulls the viewer closer',
+    zoomout:      'Zoom out: Ken Burns slow zoom out — starts close, reveals the scene',
+    panleft:      'Pan left: slow horizontal drift left across every scene',
+    panright:     'Pan right: slow horizontal drift right across every scene',
+    driftup:      'Drift up: slow vertical float upward — great for tall portrait images',
+    driftdown:    'Drift down: slow vertical descent — evokes falling into a void',
+    slowzoom:     'Slow zoom: ultra-subtle Ken Burns zoom — minimal travel, suits detailed space art',
+    cosmicmixed:  '✦ Cosmic: slow drifts and minimal zooms only — ominous pacing for deep space horror',
+    static:       'All static: clean still cuts with crossfade — fastest assembly, minimal distraction'
   };
   const el = document.getElementById('motionDesc');
   if (el) el.textContent = descs[mode] || '';
@@ -1046,7 +1155,11 @@ window.onload = () => {
   if (saved) { try { wordTimings = JSON.parse(saved); } catch (_) {} }
 };
 
-// Fetch CHANNEL_NAME from gateway and prefill the input (if not already set by user)
+// Channel config from gateway — channel name, accent colour, image prefix, script mode
+let channelImagePrefix = '';
+let channelScriptMode  = 'default';
+let channelAccentColor = '#E8FF47';
+
 async function prefillChannelNameFromGateway() {
   try {
     const resp = await fetch(LOCAL_GATEWAY + '/api/channel-name', { signal: AbortSignal.timeout(2000) });
@@ -1056,6 +1169,11 @@ async function prefillChannelNameFromGateway() {
     if (el && !el.value && channelName) {
       el.value = channelName;
       localStorage.setItem('channelName', channelName);
+    }
+    // Auto-select profile based on channel name from config
+    if (channelName) {
+      const key = Object.keys(CHANNEL_PROFILES).find(k => channelName.toLowerCase().includes(k.replace('_', ''))) || 'historymystery181';
+      applyChannelProfile(key);
     }
   } catch (_) {}
 }
@@ -1285,8 +1403,54 @@ async function generateScriptAPI() {
   const topic = document.getElementById('topicInput').value.trim();
   const sceneCount = getSceneCount(dur);
 
-  const systemPrompt = `You are a viral short-form video creator and rigorous fact-checker. Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
-{"title":"string","hook_stat":"string","total_duration":number,"scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5}],"full_voiceover_script":"string","cta_line":"string","cta_question":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}
+  // Prompted targets are eased ~15% below the hard ceiling so Claude lands
+  // under the limit on the first attempt — no retries needed.
+  // Hard ceilings: 28s=60w, 42s=91w, 52s=113w
+  const wordLimits = { '28': 50, '42': 77, '52': 96 };
+  const maxWords = wordLimits[dur] || 50;
+
+  const JSON_SCHEMA = `{"title":"string","hook_stat":"string","total_duration":number,"scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5}],"full_voiceover_script":"string","cta_line":"string","cta_question":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}`;
+
+  let systemPrompt, userPrompt;
+
+  if (channelScriptMode === 'cosmic_dread') {
+    // ── Cosmic Dread mode ────────────────────────────────────────────────────
+    systemPrompt = `You are a writer for a deep space horror YouTube Shorts channel called "Cosmic Dread". Your scripts explore the terrifying, incomprehensible scale of the universe — black holes, dying stars, heat death of the universe, the Fermi paradox, dark matter voids, rogue planets, and the silence of the cosmos.
+
+Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
+${JSON_SCHEMA}
+
+The "cta_question" field must invite viewers to comment on the cosmic concept — e.g. "Does the size of the universe terrify you?" Keep it under 12 words.
+
+Tone: slow-burn dread, not jump-scare. Build existential unease through scale and fact. Never use gore or explicit horror — the terror comes from the incomprehensible.
+
+The hook (Scene 1 opening line) MUST use exactly one of these four structures:
+1. "[Cosmic phenomenon or fact] — here's why it should terrify you"
+2. "Scientists discovered something in deep space — and they won't talk about it"
+3. "Most people don't know what's at the edge of the observable universe..."
+4. "[Number] things in deep space that defy all human understanding"
+
+Visual prompts for EVERY scene must describe: ultra-detailed painterly space art, Greg Rutkowski meets sci-fi horror, deep violet and pitch black dominant, blood red nebulae or cold blue starlight, cinematic volumetric fog, bioluminescent particles, 8k hyperrealistic, ominous and vast, 9:16 vertical portrait, no text no watermarks. Each scene's visual_prompt must specify the specific cosmic subject, dominant colours, and lighting direction.
+
+Before finalising the JSON, verify every fact: distances, temperatures, timescales, scientific consensus. Never invent or exaggerate beyond what is documented.`;
+
+    userPrompt = `Create a Cosmic Dread YouTube Shorts script (${dur}s narration target) about: "${topic}"
+
+Rules:
+- Exactly ${sceneCount} scenes total — scene count must match exactly
+- HARD WORD LIMIT: full_voiceover_script must be ${maxWords} words or fewer. Count every word before finishing. ElevenLabs reads at ~140wpm so ${maxWords} words = ~${dur} seconds of audio. This is the most important rule.
+- Tone: slow-burn existential dread. Each sentence must add dread, scale, or factual weight — no filler.
+- Scene 1: 2–3s hook using one of the four required hook structures
+- Every fact must be 100% scientifically accurate — double-check distances, temperatures, timescales
+- Final scene: CTA asking viewers to comment on what terrifies them most about this topic (2–3s max)
+- visual_prompt for each scene: describe the specific deep space subject with Cosmic Dread aesthetic (colours, lighting, mood, subject position) — these go directly to DALL-E 3
+- duration_seconds: must reflect actual scene length, 2–6s max per scene, never exceed 6s
+- full_voiceover_script: all voiceover lines as one continuous paragraph — must be ${maxWords} words or fewer`;
+
+  } else {
+    // ── Default mode (historymystery181) ─────────────────────────────────────
+    systemPrompt = `You are a viral short-form video creator and rigorous fact-checker. Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
+${JSON_SCHEMA}
 
 The "cta_question" field must be a single engaging question that invites viewers to comment — e.g. "Which of these facts surprised you most?" Keep it under 12 words.
 
@@ -1298,13 +1462,7 @@ The hook (Scene 1 opening line) MUST use exactly one of these four structures:
 
 Before finalising the JSON, internally verify every factual claim: dates, temperatures, measurements, death tolls, durations, scientific facts. If any claim cannot be verified with certainty, replace it with a verifiable alternative or remove it. Never output a fact you are not confident is accurate.`;
 
-  // Prompted targets are eased ~15% below the hard ceiling so Claude lands
-  // under the limit on the first attempt — no retries needed.
-  // Hard ceilings: 28s=60w, 42s=91w, 52s=113w
-  const wordLimits = { '28': 50, '42': 77, '52': 96 };
-  const maxWords = wordLimits[dur] || 50;
-
-  const userPrompt = `Create a YouTube/Instagram Shorts script (${dur}s narration target) about: "${topic}"
+    userPrompt = `Create a YouTube/Instagram Shorts script (${dur}s narration target) about: "${topic}"
 Category: ${cat}. Niche: ${niche}.
 Rules:
 - Exactly ${sceneCount} scenes total — scene count must match exactly
@@ -1317,6 +1475,7 @@ Rules:
 - Visual prompts: cinematic, hyper-realistic, 9:16 vertical, no text in frame, mobile safe zones
 - duration_seconds: must reflect actual scene length, 2–6s max per scene, never exceed 6s
 - full_voiceover_script: all voiceover lines as one continuous paragraph — must be ${maxWords} words or fewer`;
+  }
 
   const resp = await fetch(LOCAL_GATEWAY + '/api/script', {
     method: 'POST',
@@ -1384,18 +1543,34 @@ async function generateVoiceoverAPI() {
   const voice = document.getElementById('voiceSelect').value;
 
   const VOICE_IDS = {
-    Rachel: '21m00Tcm4TlvDq8ikWAM',
-    Adam:   'pNInz6obpgDQGcFmaJgB',
-    Bella:  'EXAVITQu4vr4xnSDxMaL',
-    Antoni: 'ErXwobaYiN019PkySvjV',
-    Josh:   'TxGEqnHWrfWFTfGW9XjX'
+    Rachel:    '21m00Tcm4TlvDq8ikWAM',
+    Adam:      'pNInz6obpgDQGcFmaJgB',
+    Bella:     'EXAVITQu4vr4xnSDxMaL',
+    Antoni:    'ErXwobaYiN019PkySvjV',
+    Josh:      'TxGEqnHWrfWFTfGW9XjX',
+    Sam:       'yoZ06aMxZJJ28mfd3POQ',
+    Domi:      'AZnzlk1XvdvUeBnXmlld',
+    Elli:      'MF3mGyEYCl7XYWbV9V6O',
+    Callum:    'N2lVS1w4EtoT3dr4eOWO',
+    Charlotte: 'XB0fDUnXU5powFXDhCwa',
+    Patrick:   'ODq5zmih8GrVes37Dy39',
+    Thomas:    'GBv7mTt0atIp3Br8iCZE',
+    Joseph:    'Zlb1dXrM653N07WRdFW3',
+    Arnold:    'VR6AewLTigWG4xSOukaG',
+    Daniel:    'onwK4e9ZLuTAKqWW03F9',
   };
   const voiceId = VOICE_IDS[voice] || VOICE_IDS.Rachel;
+  const profile = CHANNEL_PROFILES[activeProfile] || CHANNEL_PROFILES.historymystery181;
 
   const resp = await fetch(LOCAL_GATEWAY + '/api/voiceover', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ voiceId, text: lastOutput.full_voiceover_script })
+    body: JSON.stringify({
+      voiceId,
+      text:             lastOutput.full_voiceover_script,
+      stability:        profile.stability,
+      similarity_boost: profile.similarity,
+    })
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ error: 'Voiceover failed' }));
@@ -1478,7 +1653,7 @@ function selectProvider(p) {
   const imagesBtn = document.getElementById('imagesBtn');
   if (imagesBtn) imagesBtn.textContent = p === 'upload' ? 'Use uploaded images →' : 'Generate images →';
   const labels = {
-    dalle3: '~$0.04 per image',
+    dalle3: `~$${IMG_COSTS.dalle3.toFixed(2)} per image (${imageQuality === 'hd' ? 'HD' : 'Standard'})`,
     dalle2: '~$0.005 per image',
     pexels: 'Free — real photos from Pexels',
     upload: 'Free — your own images'
@@ -1512,18 +1687,22 @@ async function generateImagesAPI() {
     const labelEl = document.getElementById('imgLabel' + i);
     if (labelEl) labelEl.textContent = `Scene ${scene.scene_number} — generating... (${i+1}/${scenes.length})`;
 
-    const visualPrompt = scene.visual_prompt?.trim() ||
+    const basePrompt = scene.visual_prompt?.trim() ||
       `${scene.title}, cinematic hyper-realistic 9:16 vertical shot, no text in frame`;
+    const visualPrompt = channelImagePrefix
+      ? `${channelImagePrefix} ${basePrompt}`
+      : basePrompt;
     const resp = await fetch(LOCAL_GATEWAY + '/api/images', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        provider: imageProvider,
-        prompt: visualPrompt,
+        provider:     imageProvider,
+        prompt:       visualPrompt,
         scene_number: scene.scene_number,
-        scene_title: scene.title,
-        tags: lastOutput.tags || [],
-        page: 1
+        scene_title:  scene.title,
+        tags:         lastOutput.tags || [],
+        page:         1,
+        imageQuality,
       })
     });
     if (!resp.ok) {
@@ -1575,15 +1754,20 @@ async function generateImagesAPI() {
       for (const dup of duplicates) {
         const idx   = dup.sceneB - 1;
         const scene = scenes[idx];
-        const basePrompt = scene.visual_prompt?.trim() || `${scene.title}, cinematic hyper-realistic 9:16 vertical shot`;
-        const newPrompt = basePrompt + ', completely different angle, different lighting, different composition';
+        const sceneBasePrompt = scene.visual_prompt?.trim() || `${scene.title}, cinematic hyper-realistic 9:16 vertical shot`;
+        const prefixedPrompt  = channelImagePrefix ? `${channelImagePrefix} ${sceneBasePrompt}` : sceneBasePrompt;
+        const newPrompt = prefixedPrompt + ', completely different angle, different lighting, different composition';
         const regenResp = await fetch(LOCAL_GATEWAY + '/api/images', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            provider: imageProvider, prompt: newPrompt,
-            scene_number: scene.scene_number, scene_title: scene.title,
-            tags: lastOutput.tags || [], page: 2
+            provider:     imageProvider,
+            prompt:       newPrompt,
+            scene_number: scene.scene_number,
+            scene_title:  scene.title,
+            tags:         lastOutput.tags || [],
+            page:         2,
+            imageQuality,
           })
         });
         if (regenResp.ok) {
@@ -1770,12 +1954,13 @@ async function refreshImage(index) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        provider: imageProvider,
-        prompt: scene.visual_prompt,
+        provider:     imageProvider,
+        prompt:       scene.visual_prompt,
         scene_number: scene.scene_number,
-        scene_title: scene.title,
-        tags: lastOutput.tags || [],
-        page: pexelsPageMap[scene.scene_number] || 1
+        scene_title:  scene.title,
+        tags:         lastOutput.tags || [],
+        page:         pexelsPageMap[scene.scene_number] || 1,
+        imageQuality,
       })
     });
     if (!resp.ok) {
@@ -1850,6 +2035,7 @@ async function assembleVideoAPI() {
       ctaQuestion: currentCtaQuestion || '',
       topicTag:    currentTopicTag    || '',
       hookText:    lastOutput.hook_stat || lastOutput.scenes?.[0]?.voiceover?.split(/[.!?]/)[0] || '',
+      accentColor: channelAccentColor || '#E8FF47',
       exportProfile: undefined, // generate both profiles
     })
   });
