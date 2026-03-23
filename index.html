@@ -8,180 +8,224 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg:#080A0F;--surface:#0F1118;--surface2:#161924;
-    --border:rgba(255,255,255,0.07);--border-active:rgba(255,255,255,0.18);
-    --accent:#E8FF47;--accent-dim:rgba(232,255,71,0.12);--accent-glow:rgba(232,255,71,0.25);
-    --text:#F0F0F0;--text-muted:#6B7280;--text-dim:#9CA3AF;
-    --red:#FF4D4D;--green:#4DFF9A;--blue:#47B4FF;--orange:#FF9A47;
+    --bg:#04060C;--surface:#0A0C14;--surface2:#0F1119;
+    --border:rgba(255,255,255,0.065);--border-active:rgba(255,255,255,0.14);
+    --accent:#E8FF47;--accent-dim:rgba(232,255,71,0.08);--accent-glow:rgba(232,255,71,0.2);
+    --text:#E6E8F0;--text-muted:#4E5668;--text-dim:#7E8A9E;
+    --red:#FF4D4D;--green:#3DFF8F;--blue:#47B4FF;--orange:#FF9A47;
     --font-display:'Syne',sans-serif;--font-mono:'DM Mono',monospace;
-    --radius:10px;--radius-lg:16px;
+    --radius:10px;--radius-lg:14px;
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--bg);color:var(--text);font-family:var(--font-display);min-height:100vh;overflow-x:hidden;}
-  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(232,255,71,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(232,255,71,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-  .app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 1.25rem 4rem;}
-  header{display:flex;align-items:center;justify-content:space-between;padding:1.5rem 0 2.5rem;border-bottom:1px solid var(--border);margin-bottom:2rem;}
-  .logo{display:flex;align-items:center;gap:10px;}
-  .logo-mark{width:32px;height:32px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;}
-  .logo-mark svg{width:16px;height:16px;}
-  .logo-text{font-size:18px;font-weight:800;letter-spacing:-0.02em;}
+
+  /* Fine grid */
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(232,255,71,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(232,255,71,0.018) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0;}
+  /* Atmospheric radial glows */
+  body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 40% at 50% 0%,rgba(232,255,71,0.045) 0%,transparent 65%),radial-gradient(ellipse 40% 25% at 8% 85%,rgba(71,180,255,0.025) 0%,transparent 55%),radial-gradient(ellipse 40% 25% at 92% 75%,rgba(255,59,107,0.02) 0%,transparent 55%);pointer-events:none;z-index:0;}
+
+  .app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 1.25rem 4rem;animation:app-in 0.5s cubic-bezier(0.23,1,0.32,1) both;}
+  @keyframes app-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ─── Header ────────────────────────────────────────────── */
+  header{display:flex;align-items:center;justify-content:space-between;padding:1.75rem 0 2.25rem;border-bottom:1px solid var(--border);margin-bottom:2rem;}
+  .logo{display:flex;align-items:center;gap:12px;}
+  .logo-mark{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(232,255,71,0.28),0 0 48px rgba(232,255,71,0.1);}
+  .logo-mark svg{width:17px;height:17px;}
+  .logo-text{font-size:19px;font-weight:800;letter-spacing:-0.03em;line-height:1.15;}
   .logo-text span{color:var(--accent);}
-  .status-badge{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);}
-  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite;}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-  .section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem;transition:border-color 0.2s;}
-  .section:focus-within{border-color:var(--border-active);}
-  .section-label{font-size:10px;font-weight:600;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:1rem;font-family:var(--font-mono);}
+  .logo-sub{font-size:9px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:1px;}
+  .status-badge{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:10px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.05em;}
+  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2.5s ease-in-out infinite;box-shadow:0 0 6px var(--green);}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(0.8)}}
+
+  /* ─── Sections ──────────────────────────────────────────── */
+  .section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem;transition:border-color 0.25s,box-shadow 0.25s;}
+  .section:focus-within{border-color:var(--border-active);box-shadow:0 0 0 1px rgba(255,255,255,0.03) inset;}
+  .section-label{display:flex;align-items:center;gap:9px;font-size:9px;font-weight:700;letter-spacing:0.14em;color:var(--text-muted);margin-bottom:1.1rem;font-family:var(--font-mono);text-transform:uppercase;}
+  .section-label::before{content:'';display:inline-block;width:16px;height:2px;background:var(--accent);border-radius:2px;opacity:0.55;flex-shrink:0;}
+
+  /* ─── Topic input ────────────────────────────────────────── */
   .topic-wrap{position:relative;}
-  .topic-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 48px 14px 16px;font-size:15px;font-family:var(--font-display);color:var(--text);outline:none;transition:border-color 0.2s,box-shadow 0.2s;-webkit-appearance:none;}
+  .topic-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:15px 50px 15px 16px;font-size:15px;font-family:var(--font-display);color:var(--text);outline:none;transition:border-color 0.2s,box-shadow 0.2s;-webkit-appearance:none;}
   .topic-input::placeholder{color:var(--text-muted);}
   .topic-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);}
-  .random-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--accent-dim);border:1px solid rgba(232,255,71,0.2);border-radius:6px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--accent);font-size:14px;transition:background 0.15s;}
-  .random-btn:hover{background:var(--accent-glow);}
+  .random-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--accent-dim);border:1px solid rgba(232,255,71,0.18);border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--accent);font-size:15px;transition:background 0.15s,transform 0.25s;}
+  .random-btn:hover{background:var(--accent-glow);transform:translateY(-50%) rotate(22deg);}
+
+  /* ─── Options ───────────────────────────────────────────── */
   .options-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   @media(max-width:480px){.options-grid{grid-template-columns:1fr;}}
-  .opt-group label{display:block;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:5px;}
-  .opt-group select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:13px;font-family:var(--font-display);color:var(--text);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236B7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;transition:border-color 0.2s;}
+  .opt-group label{display:block;font-size:9px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:6px;letter-spacing:0.1em;text-transform:uppercase;}
+  .opt-group select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:13px;font-family:var(--font-display);color:var(--text);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234E5668'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;transition:border-color 0.2s;}
   .opt-group select:focus{border-color:var(--accent);outline:none;}
 
-  /* Master button */
-  .master-btn{width:100%;background:var(--accent);color:#080A0F;border:none;border-radius:var(--radius);padding:18px;font-size:16px;font-weight:800;font-family:var(--font-display);letter-spacing:0.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.2s,transform 0.1s;margin-bottom:0.75rem;}
-  .master-btn:hover:not(:disabled){opacity:0.9;}
-  .master-btn:active:not(:disabled){transform:scale(0.99);}
-  .master-btn:disabled{opacity:0.4;cursor:not-allowed;}
-  .secondary-btn{width:100%;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:13px;font-weight:600;font-family:var(--font-display);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color 0.15s,color 0.15s;margin-bottom:1rem;}
-  .secondary-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+  /* ─── Primary button ────────────────────────────────────── */
+  .master-btn{width:100%;background:var(--accent);color:#04060C;border:none;border-radius:var(--radius);padding:18px;font-size:16px;font-weight:800;font-family:var(--font-display);letter-spacing:0.01em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.2s,transform 0.12s,box-shadow 0.2s;margin-bottom:0.75rem;box-shadow:0 4px 28px rgba(232,255,71,0.2);position:relative;overflow:hidden;}
+  .master-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.15) 50%,transparent 100%);transform:translateX(-120%);transition:transform 0.55s;}
+  .master-btn:hover:not(:disabled)::after{transform:translateX(120%);}
+  .master-btn:hover:not(:disabled){opacity:0.93;box-shadow:0 6px 40px rgba(232,255,71,0.3);}
+  .master-btn:active:not(:disabled){transform:scale(0.985);}
+  .master-btn:disabled{opacity:0.3;cursor:not-allowed;box-shadow:none;}
+
+  .secondary-btn{width:100%;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:13px;font-weight:600;font-family:var(--font-display);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color 0.15s,color 0.15s,background 0.15s;margin-bottom:1rem;}
+  .secondary-btn:hover:not(:disabled){border-color:rgba(232,255,71,0.4);color:var(--accent);background:var(--accent-dim);}
   .secondary-btn:disabled{opacity:0.3;cursor:not-allowed;}
 
-  /* Pipeline */
-  .pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:1rem;}
+  /* ─── Pipeline tracker ──────────────────────────────────── */
+  .pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:1rem;}
   @media(max-width:500px){.pipeline{grid-template-columns:repeat(2,1fr);}}
-  .pipe-step{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center;transition:all 0.3s;}
-  .pipe-step.active{border-color:var(--accent);background:var(--accent-dim);}
-  .pipe-step.done{border-color:rgba(77,255,154,0.3);background:rgba(77,255,154,0.06);}
-  .pipe-step.error{border-color:rgba(255,77,77,0.3);background:rgba(255,77,77,0.06);}
-  .pipe-icon{font-size:16px;margin-bottom:4px;}
-  .pipe-name{font-size:11px;font-weight:600;color:var(--text-dim);}
+  .pipe-step{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 8px 12px;text-align:center;transition:all 0.35s cubic-bezier(0.23,1,0.32,1);position:relative;overflow:hidden;}
+  .pipe-step::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:transparent;transition:background 0.35s,box-shadow 0.35s;}
+  .pipe-step.active{border-color:rgba(232,255,71,0.22);background:rgba(232,255,71,0.04);}
+  .pipe-step.active::after{background:var(--accent);box-shadow:0 0 8px rgba(232,255,71,0.5);}
+  .pipe-step.done{border-color:rgba(61,255,143,0.2);background:rgba(61,255,143,0.03);}
+  .pipe-step.done::after{background:var(--green);}
+  .pipe-step.error{border-color:rgba(255,77,77,0.22);background:rgba(255,77,77,0.04);}
+  .pipe-step.error::after{background:var(--red);}
+  .pipe-icon{font-size:17px;margin-bottom:7px;display:block;line-height:1;transition:transform 0.3s;color:var(--text-muted);}
+  .pipe-step.active .pipe-icon{color:var(--accent);animation:pipe-pulse 1.5s ease-in-out infinite;}
+  .pipe-step.done .pipe-icon{color:var(--green);}
+  .pipe-step.error .pipe-icon{color:var(--red);}
+  @keyframes pipe-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+  .pipe-name{font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.03em;}
   .pipe-step.active .pipe-name{color:var(--accent);}
   .pipe-step.done .pipe-name{color:var(--green);}
   .pipe-step.error .pipe-name{color:var(--red);}
-  .pipe-status{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:2px;}
+  .pipe-status{font-size:9px;font-family:var(--font-mono);color:var(--text-muted);margin-top:3px;}
 
-  /* Progress */
+  /* ─── Progress ──────────────────────────────────────────── */
   .progress-wrap{margin-bottom:1rem;display:none;}
   .progress-wrap.visible{display:block;}
-  .progress-label{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:6px;display:flex;justify-content:space-between;}
-  .progress-bar{height:3px;background:var(--surface2);border-radius:999px;overflow:hidden;}
-  .progress-bar-inner{height:100%;background:var(--accent);border-radius:999px;transition:width 0.5s ease;}
+  .progress-label{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:8px;display:flex;justify-content:space-between;}
+  .progress-bar{height:2px;background:var(--surface2);border-radius:999px;overflow:hidden;}
+  .progress-bar-inner{height:100%;background:var(--accent);border-radius:999px;transition:width 0.55s cubic-bezier(0.23,1,0.32,1);box-shadow:0 0 10px rgba(232,255,71,0.5);}
 
-  .error-box{background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.3);border-radius:var(--radius);padding:12px 16px;font-size:13px;color:#FF8080;font-family:var(--font-mono);margin-bottom:1rem;display:none;}
+  /* ─── Error ─────────────────────────────────────────────── */
+  .error-box{background:rgba(255,77,77,0.05);border:1px solid rgba(255,77,77,0.18);border-left:3px solid var(--red);border-radius:var(--radius);padding:12px 16px;font-size:13px;color:#FF8080;font-family:var(--font-mono);margin-bottom:1rem;display:none;line-height:1.6;}
   .error-box.visible{display:block;}
 
   .output{display:none;}
   .output.visible{display:block;}
 
-  .concept-card{background:var(--accent-dim);border:1px solid rgba(232,255,71,0.2);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem;}
-  .concept-label{font-size:10px;font-family:var(--font-mono);color:var(--accent);letter-spacing:0.08em;margin-bottom:6px;}
-  .concept-text{font-size:14px;font-weight:600;color:var(--text);line-height:1.5;}
+  /* ─── Concept card ──────────────────────────────────────── */
+  .concept-card{background:linear-gradient(135deg,rgba(232,255,71,0.07) 0%,rgba(232,255,71,0.03) 100%);border:1px solid rgba(232,255,71,0.16);border-radius:var(--radius);padding:16px 18px;margin-bottom:1rem;}
+  .concept-label{font-size:9px;font-family:var(--font-mono);color:var(--accent);letter-spacing:0.12em;margin-bottom:8px;text-transform:uppercase;}
+  .concept-text{font-size:15px;font-weight:700;color:var(--text);line-height:1.55;}
   .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.25rem;}
-  .tag{background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:3px 10px;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);}
+  .tag{background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:3px 11px;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);}
 
-  /* Scene cards */
-  .scene-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;}
-  .scene-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface);cursor:pointer;user-select:none;}
-  .scene-num{background:var(--accent);color:#080A0F;width:22px;height:22px;border-radius:4px;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  /* ─── Scene cards ────────────────────────────────────────── */
+  .scene-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;transition:border-color 0.2s;}
+  .scene-card:hover{border-color:var(--border-active);}
+  .scene-head{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid transparent;background:var(--surface);cursor:pointer;user-select:none;transition:border-color 0.2s;}
+  .scene-card.open .scene-head{border-bottom-color:var(--border);}
+  .scene-num{background:var(--accent);color:#04060C;width:22px;height:22px;border-radius:4px;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .scene-head-title{flex:1;font-size:13px;font-weight:600;color:var(--text);}
-  .scene-time{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);}
-  .scene-chevron{font-size:12px;color:var(--text-muted);transition:transform 0.2s;}
+  .scene-time{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);}
+  .scene-chevron{font-size:11px;color:var(--text-muted);transition:transform 0.25s;}
   .scene-card.open .scene-chevron{transform:rotate(180deg);}
   .scene-body{display:none;padding:14px;}
   .scene-card.open .scene-body{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   @media(max-width:500px){.scene-card.open .scene-body{grid-template-columns:1fr;}}
-  .scene-col-label{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em;margin-bottom:6px;}
-  .scene-vo{font-size:13px;color:var(--text);line-height:1.6;}
-  .scene-vp{font-size:12px;color:var(--text-dim);line-height:1.6;background:var(--surface);border-radius:6px;padding:10px;border:1px solid var(--border);}
+  .scene-col-label{font-size:9px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;}
+  .scene-vo{font-size:13px;color:var(--text);line-height:1.65;}
+  .scene-vp{font-size:12px;color:var(--text-dim);line-height:1.65;background:var(--surface);border-radius:6px;padding:10px;border:1px solid var(--border);}
   .copy-btn-sm{margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:10px;font-family:var(--font-mono);color:var(--text-muted);cursor:pointer;transition:border-color 0.15s,color 0.15s;}
   .copy-btn-sm:hover{border-color:var(--accent);color:var(--accent);}
   .action-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:1.25rem;}
   @media(max-width:400px){.action-row{grid-template-columns:1fr;}}
-  .action-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:12px;font-family:var(--font-mono);color:var(--text-dim);cursor:pointer;text-align:center;transition:border-color 0.15s,color 0.15s;}
-  .action-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .action-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:12px;font-family:var(--font-mono);color:var(--text-dim);cursor:pointer;text-align:center;transition:border-color 0.15s,color 0.15s,background 0.15s;}
+  .action-btn:hover{border-color:rgba(232,255,71,0.4);color:var(--accent);background:var(--accent-dim);}
 
-  /* Voiceover */
+  /* ─── Voiceover ─────────────────────────────────────────── */
   .vo-controls{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:0.75rem;}
-  .blue-btn{background:var(--surface2);border:1px solid rgba(71,180,255,0.3);border-radius:var(--radius);padding:10px 16px;font-size:12px;font-family:var(--font-mono);color:var(--blue);cursor:pointer;white-space:nowrap;transition:background 0.15s;}
-  .blue-btn:hover:not(:disabled){background:rgba(71,180,255,0.08);}
-  .blue-btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .blue-btn{background:var(--surface2);border:1px solid rgba(71,180,255,0.22);border-radius:var(--radius);padding:10px 16px;font-size:12px;font-family:var(--font-mono);color:var(--blue);cursor:pointer;white-space:nowrap;transition:background 0.15s,border-color 0.15s;}
+  .blue-btn:hover:not(:disabled){background:rgba(71,180,255,0.07);border-color:rgba(71,180,255,0.38);}
+  .blue-btn:disabled{opacity:0.35;cursor:not-allowed;}
   .audio-player{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:none;align-items:center;gap:12px;}
   .audio-player.visible{display:flex;}
-  .play-btn{width:36px;height:36px;background:var(--blue);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .play-btn svg{width:14px;height:14px;fill:#080A0F;}
+  .play-btn{width:38px;height:38px;background:var(--blue);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 14px rgba(71,180,255,0.28);transition:box-shadow 0.2s,transform 0.12s;}
+  .play-btn:hover{box-shadow:0 4px 22px rgba(71,180,255,0.42);transform:scale(1.06);}
+  .play-btn svg{width:14px;height:14px;fill:#04060C;}
   .audio-info{flex:1;}
   .audio-title{font-size:12px;font-weight:600;color:var(--text);}
   .audio-sub{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:2px;}
   .dl-btn{background:transparent;border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);cursor:pointer;transition:border-color 0.15s,color 0.15s;}
   .dl-btn:hover{border-color:var(--blue);color:var(--blue);}
 
-  /* Images grid */
+  /* ─── Provider cards ────────────────────────────────────── */
   .images-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:0.75rem;}
-  .provider-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:border-color 0.15s,background 0.15s;text-align:center;}
-  .provider-card:hover{border-color:var(--border-active);}
-  .provider-card.active{border-color:var(--accent);background:var(--accent-dim);}
+  .provider-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;text-align:center;transition:border-color 0.2s,background 0.2s,box-shadow 0.2s;}
+  .provider-card:hover{border-color:var(--border-active);background:rgba(255,255,255,0.015);}
+  .provider-card.active{border-color:rgba(232,255,71,0.38);background:rgba(232,255,71,0.055);box-shadow:0 0 0 1px rgba(232,255,71,0.08) inset;}
   .prov-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;}
   .provider-card.active .prov-name{color:var(--accent);}
   .prov-cost{font-size:12px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:4px;}
-  .provider-card.active .prov-cost{color:var(--accent);}
-  .prov-tag{display:inline-block;font-size:10px;font-family:var(--font-mono);padding:2px 8px;border-radius:999px;background:var(--surface);color:var(--text-muted);}
+  .provider-card.active .prov-cost{color:rgba(232,255,71,0.65);}
+  .prov-tag{display:inline-block;font-size:10px;font-family:var(--font-mono);padding:2px 9px;border-radius:999px;background:var(--surface);color:var(--text-muted);}
+  .provider-card.active .prov-tag{background:rgba(232,255,71,0.12);color:var(--accent);}
+
+  /* Cosmic Dread channel card — crimson accent when active */
+  #profile-cosmic_dread.active{border-color:rgba(255,59,107,0.42);background:rgba(255,59,107,0.05);box-shadow:0 0 0 1px rgba(255,59,107,0.08) inset;}
+  #profile-cosmic_dread.active .prov-name{color:#FF3B6B;}
+  #profile-cosmic_dread.active .prov-cost{color:rgba(255,59,107,0.7);}
+
   .cost-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;text-align:center;}
   .cost-item-label{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:4px;}
   .cost-item-val{font-size:16px;font-weight:700;color:var(--text);}
   @media(max-width:400px){#costGrid{grid-template-columns:1fr 1fr;}}
-  .provider-card.active .prov-tag{background:rgba(232,255,71,0.15);color:var(--accent);}
   @media(max-width:500px){.images-grid{grid-template-columns:repeat(2,1fr);}}
+
+  /* ─── Image cards ────────────────────────────────────────── */
   .img-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface2);aspect-ratio:9/16;position:relative;}
   .img-card img{width:100%;height:100%;object-fit:cover;display:block;}
-  .img-card-label{position:absolute;bottom:0;left:0;right:0;background:rgba(8,10,15,0.85);padding:6px 8px;font-size:10px;font-family:var(--font-mono);color:var(--text-muted);}
+  .img-card-label{position:absolute;bottom:0;left:0;right:0;background:rgba(4,6,12,0.88);padding:6px 8px;font-size:10px;font-family:var(--font-mono);color:var(--text-muted);}
   .img-generating{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;}
   .img-spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg)}}
   .img-gen-label{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);}
-  .img-refresh-btn{position:absolute;top:6px;right:6px;background:rgba(8,10,15,0.75);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:4px 8px;font-size:10px;font-family:var(--font-mono);color:var(--text-dim);cursor:pointer;transition:border-color 0.15s,color 0.15s;z-index:2;}
+  .img-refresh-btn{position:absolute;top:6px;right:6px;background:rgba(4,6,12,0.82);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:4px 8px;font-size:10px;font-family:var(--font-mono);color:var(--text-dim);cursor:pointer;transition:border-color 0.15s,color 0.15s;z-index:2;}
   .img-refresh-btn:hover{border-color:var(--accent);color:var(--accent);}
   .img-refresh-btn:disabled{opacity:0.4;cursor:not-allowed;}
-  .upload-slot{border:1.5px dashed var(--border-active);border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;transition:border-color 0.15s,background 0.15s;background:var(--surface2);position:relative;}
-  .upload-slot:hover{border-color:var(--accent);background:var(--accent-dim);}
-  .upload-slot.filled{border-style:solid;border-color:rgba(77,255,154,0.4);background:rgba(77,255,154,0.05);}
+
+  /* ─── Upload slot ────────────────────────────────────────── */
+  .upload-slot{border:1.5px dashed rgba(255,255,255,0.12);border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;background:var(--surface2);position:relative;}
+  .upload-slot:hover{border-color:rgba(232,255,71,0.35);background:var(--accent-dim);}
+  .upload-slot.filled{border-style:solid;border-color:rgba(61,255,143,0.35);background:rgba(61,255,143,0.03);}
   .upload-slot-preview{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:6px;display:block;margin-bottom:6px;}
   .upload-slot-label{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);}
   .upload-slot.filled .upload-slot-label{color:var(--green);}
-  .upload-slot-icon{font-size:20px;margin-bottom:6px;}
+  .upload-slot-icon{font-size:22px;margin-bottom:6px;}
   .upload-slot-name{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:3px;word-break:break-all;}
-  .upload-clear-btn{position:absolute;top:6px;right:6px;background:rgba(8,10,15,0.75);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 7px;font-size:10px;font-family:var(--font-mono);color:var(--text-dim);cursor:pointer;}
+  .upload-clear-btn{position:absolute;top:6px;right:6px;background:rgba(4,6,12,0.82);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:2px 7px;font-size:10px;font-family:var(--font-mono);color:var(--text-dim);cursor:pointer;}
   .upload-clear-btn:hover{border-color:var(--red);color:var(--red);}
 
-  /* Video output */
+  /* ─── Video output ───────────────────────────────────────── */
   .video-output{margin-top:0.75rem;display:none;}
   .video-output.visible{display:block;}
-  .video-wrap{background:var(--surface2);border:1px solid rgba(77,255,154,0.3);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:14px;}
-  .video-icon{width:44px;height:44px;background:rgba(77,255,154,0.1);border:1px solid rgba(77,255,154,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .video-wrap{background:var(--surface2);border:1px solid rgba(61,255,143,0.22);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:14px;box-shadow:0 0 24px rgba(61,255,143,0.05);}
+  .video-icon{width:46px;height:46px;background:rgba(61,255,143,0.07);border:1px solid rgba(61,255,143,0.22);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
   .video-info{flex:1;}
   .video-title{font-size:13px;font-weight:600;color:var(--green);}
   .video-sub{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-top:3px;}
-  .dl-video-btn{background:rgba(77,255,154,0.1);border:1px solid rgba(77,255,154,0.3);border-radius:6px;padding:8px 16px;font-size:12px;font-family:var(--font-mono);color:var(--green);cursor:pointer;transition:background 0.15s;white-space:nowrap;}
-  .dl-video-btn:hover{background:rgba(77,255,154,0.2);}
+  .dl-video-btn{background:rgba(61,255,143,0.07);border:1px solid rgba(61,255,143,0.22);border-radius:6px;padding:8px 16px;font-size:12px;font-family:var(--font-mono);color:var(--green);cursor:pointer;transition:background 0.15s;white-space:nowrap;}
+  .dl-video-btn:hover{background:rgba(61,255,143,0.15);}
 
-  /* Backend notice */
-  .backend-notice{background:rgba(71,180,255,0.06);border:1px solid rgba(71,180,255,0.2);border-radius:var(--radius);padding:12px 14px;font-size:12px;font-family:var(--font-mono);color:#7CC5F0;margin-bottom:1rem;line-height:1.6;}
+  /* ─── Backend notices ────────────────────────────────────── */
+  .backend-notice{background:rgba(71,180,255,0.04);border:1px solid rgba(71,180,255,0.13);border-radius:var(--radius);padding:12px 14px;font-size:12px;font-family:var(--font-mono);color:#7CC5F0;margin-bottom:1rem;line-height:1.6;}
   .backend-url-row{display:flex;gap:8px;margin-top:8px;}
-  .backend-url-input{flex:1;background:var(--surface2);border:1px solid rgba(71,180,255,0.3);border-radius:6px;padding:8px 12px;font-size:12px;font-family:var(--font-mono);color:var(--text);outline:none;}
+  .backend-url-input{flex:1;background:var(--surface2);border:1px solid rgba(71,180,255,0.22);border-radius:6px;padding:8px 12px;font-size:12px;font-family:var(--font-mono);color:var(--text);outline:none;}
   .backend-url-input:focus{border-color:var(--blue);}
-  .save-url-btn{background:rgba(71,180,255,0.1);border:1px solid rgba(71,180,255,0.3);border-radius:6px;padding:8px 14px;font-size:12px;font-family:var(--font-mono);color:var(--blue);cursor:pointer;}
-  .save-url-btn:hover{background:rgba(71,180,255,0.18);}
+  .save-url-btn{background:rgba(71,180,255,0.07);border:1px solid rgba(71,180,255,0.22);border-radius:6px;padding:8px 14px;font-size:12px;font-family:var(--font-mono);color:var(--blue);cursor:pointer;}
+  .save-url-btn:hover{background:rgba(71,180,255,0.13);}
 
-  footer{text-align:center;padding:2rem 0 1rem;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);border-top:1px solid var(--border);margin-top:2rem;}
-  ::-webkit-scrollbar{width:6px;}
+  /* ─── Footer ─────────────────────────────────────────────── */
+  footer{text-align:center;padding:2rem 0 1rem;font-size:9px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase;border-top:1px solid var(--border);margin-top:2rem;}
+
+  ::-webkit-scrollbar{width:5px;}
   ::-webkit-scrollbar-track{background:var(--bg);}
-  ::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:3px;}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:3px;}
 </style>
 </head>
 <body>
@@ -190,37 +234,46 @@
   <header>
     <div class="logo">
       <div class="logo-mark">
-        <svg viewBox="0 0 16 16" fill="none"><polygon points="3,2 13,8 3,14" fill="#080A0F"/></svg>
+        <svg viewBox="0 0 16 16" fill="none"><polygon points="3,2 13,8 3,14" fill="#04060C"/></svg>
       </div>
-      <div class="logo-text">Shorts<span>Factory</span></div>
+      <div>
+        <div class="logo-text">Shorts<span>Factory</span></div>
+        <div class="logo-sub">AI video pipeline</div>
+      </div>
     </div>
     <div class="status-badge"><div class="status-dot"></div>ready</div>
   </header>
 
   <!-- API Gateway status -->
-  <div style="background:rgba(71,180,255,0.06);border:1px solid rgba(71,180,255,0.2);border-radius:var(--radius);padding:10px 14px;font-size:12px;font-family:var(--font-mono);color:#7CC5F0;margin-bottom:0.5rem;" id="gatewayNotice">
-    🔑 API Gateway: <span id="gatewayStatus" style="color:var(--text-muted);">not detected</span>
-    <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Run <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">node server.js</code> in the <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">api-gateway</code> folder — keys live there, never touch GitHub</div>
+  <div style="display:flex;align-items:flex-start;gap:10px;background:rgba(71,180,255,0.04);border:1px solid rgba(71,180,255,0.13);border-left:3px solid rgba(71,180,255,0.4);border-radius:var(--radius);padding:10px 14px;font-size:11px;font-family:var(--font-mono);color:#7CC5F0;margin-bottom:0.5rem;" id="gatewayNotice">
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;"><span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(71,180,255,0.6);">API GATEWAY</span> <span id="gatewayStatus" style="color:var(--text-muted);">not detected</span></div>
+      <div style="font-size:10px;color:var(--text-muted);">Run <code style="background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:3px;">node server.js</code> in <code style="background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:3px;">api-gateway/</code></div>
+    </div>
   </div>
   <!-- Local assembler status -->
-  <div style="background:rgba(77,255,154,0.06);border:1px solid rgba(77,255,154,0.2);border-radius:var(--radius);padding:10px 14px;font-size:12px;font-family:var(--font-mono);color:#4DFF9A;margin-bottom:1rem;" id="localNotice">
-    ⚡ Local assembler: <span id="localStatus" style="color:var(--text-muted);">not detected</span>
-    <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Run <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">node server.js</code> in the <code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">local-assembler</code> folder to enable fast Ken Burns video assembly</div>
+  <div style="display:flex;align-items:flex-start;gap:10px;background:rgba(61,255,143,0.03);border:1px solid rgba(61,255,143,0.13);border-left:3px solid rgba(61,255,143,0.35);border-radius:var(--radius);padding:10px 14px;font-size:11px;font-family:var(--font-mono);color:#3DFF8F;margin-bottom:1.25rem;" id="localNotice">
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;"><span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(61,255,143,0.6);">LOCAL ASSEMBLER</span> <span id="localStatus" style="color:var(--text-muted);">not detected</span></div>
+      <div style="font-size:10px;color:var(--text-muted);">Run <code style="background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:3px;">node server.js</code> in <code style="background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:3px;">local-assembler/</code> — enables Ken Burns assembly</div>
+    </div>
   </div>
 
   <!-- Channel profile — must be set before generating script -->
   <div class="section">
     <div class="section-label">CHANNEL</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <div class="provider-card active" id="profile-historymystery181" onclick="applyChannelProfile('historymystery181')" style="padding:10px 12px;">
-        <div class="prov-name" style="font-size:13px;">History Mystery</div>
-        <div class="prov-cost" style="font-size:11px;">historymystery181</div>
-        <div class="prov-tag" style="font-size:10px;color:#E8FF47;">■ facts &amp; history</div>
+      <div class="provider-card active" id="profile-historymystery181" onclick="applyChannelProfile('historymystery181')" style="padding:14px 14px;text-align:left;">
+        <div style="font-size:18px;margin-bottom:8px;line-height:1;">🏛</div>
+        <div class="prov-name" style="font-size:13px;letter-spacing:-0.01em;">History Mystery</div>
+        <div class="prov-cost" style="font-size:10px;margin-bottom:6px;">historymystery181</div>
+        <div class="prov-tag" style="font-size:9px;">facts &amp; history</div>
       </div>
-      <div class="provider-card" id="profile-cosmic_dread" onclick="applyChannelProfile('cosmic_dread')" style="padding:10px 12px;">
-        <div class="prov-name" style="font-size:13px;">✦ Cosmic Dread</div>
-        <div class="prov-cost" style="font-size:11px;">deep space horror</div>
-        <div class="prov-tag" style="font-size:10px;color:#FF3B6B;">■ existential terror</div>
+      <div class="provider-card" id="profile-cosmic_dread" onclick="applyChannelProfile('cosmic_dread')" style="padding:14px 14px;text-align:left;">
+        <div style="font-size:18px;margin-bottom:8px;line-height:1;">✦</div>
+        <div class="prov-name" style="font-size:13px;letter-spacing:-0.01em;">Cosmic Dread</div>
+        <div class="prov-cost" style="font-size:10px;margin-bottom:6px;">deep space horror</div>
+        <div class="prov-tag" style="font-size:9px;">existential terror</div>
       </div>
     </div>
   </div>
@@ -315,7 +368,7 @@
 
     <!-- Live cost summary -->
     <div id="costSummary" style="margin-top:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;">
-      <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em;margin-bottom:8px;">ESTIMATED COST PER VIDEO</div>
+      <div style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">Estimated cost per video</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;" id="costGrid">
         <div class="cost-item"><div class="cost-item-label">Script</div><div class="cost-item-val" id="cScript">$0.02</div></div>
         <div class="cost-item"><div class="cost-item-label">Voiceover</div><div class="cost-item-val" id="cVoice">$0.02</div></div>
@@ -349,10 +402,22 @@
 
   <!-- Pipeline tracker -->
   <div class="pipeline">
-    <div class="pipe-step" id="pipe1"><div class="pipe-icon">📝</div><div class="pipe-name">Script</div><div class="pipe-status" id="pipe1s">waiting</div></div>
-    <div class="pipe-step" id="pipe2"><div class="pipe-icon">🎙</div><div class="pipe-name">Voiceover</div><div class="pipe-status" id="pipe2s">waiting</div></div>
-    <div class="pipe-step" id="pipe3"><div class="pipe-icon">🖼</div><div class="pipe-name">Images</div><div class="pipe-status" id="pipe3s">waiting</div></div>
-    <div class="pipe-step" id="pipe4"><div class="pipe-icon">🎬</div><div class="pipe-name">Video</div><div class="pipe-status" id="pipe4s">waiting</div></div>
+    <div class="pipe-step" id="pipe1">
+      <div class="pipe-icon"><svg width="17" height="17" viewBox="0 0 16 16" fill="none" style="margin:0 auto;display:block;"><rect x="2" y="2" width="12" height="1.5" rx="0.75" fill="currentColor" opacity="0.6"/><rect x="2" y="5.5" width="10" height="1.5" rx="0.75" fill="currentColor" opacity="0.8"/><rect x="2" y="9" width="11" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="12.5" width="7" height="1.5" rx="0.75" fill="currentColor" opacity="0.5"/></svg></div>
+      <div class="pipe-name">Script</div><div class="pipe-status" id="pipe1s">waiting</div>
+    </div>
+    <div class="pipe-step" id="pipe2">
+      <div class="pipe-icon"><svg width="17" height="17" viewBox="0 0 16 16" fill="none" style="margin:0 auto;display:block;"><circle cx="8" cy="5.5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M4 9.5C4 11.5 4 13 8 13C12 13 12 11.5 12 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 13V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6 15H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <div class="pipe-name">Voiceover</div><div class="pipe-status" id="pipe2s">waiting</div>
+    </div>
+    <div class="pipe-step" id="pipe3">
+      <div class="pipe-icon"><svg width="17" height="17" viewBox="0 0 16 16" fill="none" style="margin:0 auto;display:block;"><rect x="1.5" y="1.5" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="5.5" cy="5.5" r="1.5" fill="currentColor" opacity="0.7"/><path d="M1.5 11L5 7.5L7.5 10L10.5 6.5L14.5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="pipe-name">Images</div><div class="pipe-status" id="pipe3s">waiting</div>
+    </div>
+    <div class="pipe-step" id="pipe4">
+      <div class="pipe-icon"><svg width="17" height="17" viewBox="0 0 16 16" fill="none" style="margin:0 auto;display:block;"><rect x="1" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M11 6L15 4V12L11 10" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+      <div class="pipe-name">Video</div><div class="pipe-status" id="pipe4s">waiting</div>
+    </div>
   </div>
 
   <!-- Progress -->
@@ -505,7 +570,7 @@
 
       <!-- Motion mode selector -->
       <div style="margin-bottom:1rem;">
-        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:8px;">MOTION STYLE</div>
+        <div style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">Motion style</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
           <div class="provider-card active" id="motion-mixed" onclick="selectMotion('mixed')">
             <div class="prov-name">Mixed</div>
@@ -562,7 +627,7 @@
 
       <!-- Background music upload -->
       <div style="margin-bottom:1rem;">
-        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:8px;">BACKGROUND MUSIC <span style="color:var(--text-muted);font-weight:400;">(optional)</span></div>
+        <div style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">Background music <span style="color:var(--text-muted);font-weight:400;letter-spacing:0;text-transform:none;">(optional)</span></div>
         <div class="upload-slot" onclick="document.getElementById('musicFileInput').click()" id="musicUploadSlot" style="aspect-ratio:unset;padding:14px;text-align:center;">
           <div id="musicSlotInner">
             <div class="upload-slot-icon">♪</div>
@@ -574,13 +639,13 @@
 
         <!-- Find music panel — shown after script is generated -->
         <div id="musicFindPanel" style="display:none;margin-top:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;">
-          <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em;margin-bottom:8px;">FIND FREE MUSIC</div>
+          <div style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">Find free music</div>
           <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
             <a href="https://pixabay.com/music/" target="_blank" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:11px;font-family:var(--font-mono);color:var(--blue);text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">↗ Pixabay Music</a>
             <a href="https://freesound.org/" target="_blank" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:11px;font-family:var(--font-mono);color:var(--blue);text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">↗ Freesound</a>
             <a href="https://studio.youtube.com/channel/UC/music" target="_blank" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:11px;font-family:var(--font-mono);color:var(--blue);text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">↗ YT Audio Library</a>
           </div>
-          <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:6px;">SUGGESTED SEARCH TERMS FOR THIS SCRIPT</div>
+          <div style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Suggested search terms</div>
           <div id="musicKeywords" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
         </div>
       </div>
@@ -601,7 +666,7 @@
 
       <!-- Channel name + intro/outro -->
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:1rem;">
-        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em;margin-bottom:10px;">CHANNEL BRANDING</div>
+        <div style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;">Channel branding</div>
 
         <div style="margin-bottom:10px;">
           <label style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);display:block;margin-bottom:5px;">CHANNEL NAME</label>
@@ -633,7 +698,7 @@
 
       <!-- Actual cost for this video — updates when uploads change -->
       <div id="actualCostBar" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:0.75rem;display:none;">
-        <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em;margin-bottom:8px;">ACTUAL COST — THIS VIDEO</div>
+        <div style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">Actual cost — this video</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">
           <div class="cost-item"><div class="cost-item-label">Script</div><div class="cost-item-val" id="acScript">—</div></div>
           <div class="cost-item"><div class="cost-item-label">Voiceover</div><div class="cost-item-val" id="acVoice">—</div></div>
@@ -658,6 +723,16 @@
           </div>
           <button class="dl-video-btn" id="dlVideoBtn">↓ Download MP4</button>
         </div>
+        <!-- Caption export — ready to paste when posting -->
+        <div style="margin-top:10px;">
+          <button onclick="copyCaption()" id="captionCopyBtn"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;font-size:12px;font-family:var(--font-mono);color:var(--accent);cursor:pointer;text-align:left;transition:border-color 0.15s;"
+            onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            ↓ Copy caption + hashtags + pin comment
+          </button>
+          <pre id="captionPreview" style="display:none;margin-top:6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;font-size:11px;font-family:var(--font-mono);color:var(--text-dim);white-space:pre-wrap;word-break:break-word;line-height:1.6;"></pre>
+        </div>
+
         <div id="thumbnailOutput" style="display:none;margin-top:10px;">
           <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Thumbnail · Scene 1</div>
           <div style="display:flex;align-items:flex-start;gap:12px;">
@@ -670,7 +745,7 @@
 
   </div>
 
-  <footer>shorts factory · claude + elevenlabs + dall-e 3 + ffmpeg</footer>
+  <footer>Shorts Factory &nbsp;·&nbsp; Claude &nbsp;·&nbsp; ElevenLabs &nbsp;·&nbsp; DALL·E 3 &nbsp;·&nbsp; FFmpeg</footer>
 </div>
 
 <audio id="audioEl" style="display:none;"></audio>
@@ -747,6 +822,8 @@ const CHANNEL_PROFILES = {
     defaultVoice:  'Rachel',
     stability:     0.5,
     similarity:    0.75,
+    hashtags:      ['#history', '#historyfacts', '#darkhistory', '#mysteryfacts', '#obscurehistory', '#historymystery', '#hiddenfacts', '#historybuff', '#didyouknow', '#historytok', '#ancienthistory', '#shorts'],
+    descriptionStyle: 'default',
   },
   cosmic_dread: {
     scriptMode:    'cosmic_dread',
@@ -756,6 +833,8 @@ const CHANNEL_PROFILES = {
     defaultVoice:  'Joseph',
     stability:     0.35,
     similarity:    0.85,
+    hashtags:      ['#cosmichorror', '#spacefacts', '#existentialdread', '#voidgazing', '#cosmicnihilism', '#spacehorror', '#universe', '#darkspace', '#fermiparadox', '#deepspace', '#blackhole', '#shorts'],
+    descriptionStyle: 'cosmic',
   }
 };
 
@@ -2125,6 +2204,47 @@ async function assembleVideoAPI() {
   }
 
   document.getElementById('videoOutput').classList.add('visible');
+}
+
+// ─── Caption export ───────────────────────────
+function generateCaption() {
+  if (!lastOutput) return '';
+  const profile = CHANNEL_PROFILES[activeProfile] || CHANNEL_PROFILES.historymystery181;
+  const title   = lastOutput.title || '';
+  const hook    = lastOutput.hook_stat || lastOutput.scenes?.[0]?.voiceover?.split(/[.!?]/)[0] || '';
+  const cta     = currentCtaQuestion || '';
+  const tags    = profile.hashtags.join(' ');
+
+  // Description — 2 lines, tone matches channel style
+  let desc;
+  if (profile.descriptionStyle === 'cosmic') {
+    desc = `${hook}.\n\nThe universe doesn't care about us — but we can't stop looking. 🌌`;
+  } else {
+    desc = `${hook}.\n\nHistory is stranger than fiction. Follow for more facts they didn't teach you. 📜`;
+  }
+
+  const pinLine = cta ? `\n\n📌 Pin as first comment:\n"${cta}"` : '';
+
+  return `${title}\n\n${desc}\n\n${tags}${pinLine}`;
+}
+
+function copyCaption() {
+  const caption = generateCaption();
+  if (!caption) return;
+
+  navigator.clipboard.writeText(caption).then(() => {
+    const btn = document.getElementById('captionCopyBtn');
+    const preview = document.getElementById('captionPreview');
+    btn.textContent = '✓ Copied to clipboard!';
+    preview.textContent = caption;
+    preview.style.display = 'block';
+    setTimeout(() => { btn.textContent = '↓ Copy caption + hashtags + pin comment'; }, 2500);
+  }).catch(() => {
+    // Fallback — just show it
+    const preview = document.getElementById('captionPreview');
+    preview.textContent = generateCaption();
+    preview.style.display = 'block';
+  });
 }
 
 // ─── Helpers ─────────────────────────────────
