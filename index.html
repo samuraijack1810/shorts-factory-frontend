@@ -1541,7 +1541,7 @@ async function generateScriptAPI() {
   const wordLimits = { '28': 50, '42': 77, '52': 96 };
   const maxWords = wordLimits[dur] || 50;
 
-  const JSON_SCHEMA = `{"title":"string","hook_stat":"string","total_duration":number,"anchor_object":"string","scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5}],"full_voiceover_script":"string","cta_line":"string","cta_question":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}`;
+  const JSON_SCHEMA = `{"title":"string","hook_stat":"string","total_duration":number,"anchor_object":"string","scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5,"impact_beat":false}],"full_voiceover_script":"string","cta_line":"string","cta_question":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}`;
 
   let systemPrompt, userPrompt;
 
@@ -1553,8 +1553,18 @@ ${JSON_SCHEMA}
 ## VISUAL DNA: Cosmic Dread
 Philosophical Sci-Fi meets Cosmic Horror. Lighting: Harsh rim lighting, Vantablack shadows, cold blues/purples vs dying star oranges. Composition: Extreme wide shots showing scale (tiny subject vs vast cosmos), 9:16 vertical cinematography. Palette: Deep blacks, cold blue-white starlight, dark blood-red accents.
 
-## ANCHOR OBJECT RULE
-Identify one Anchor Object — the key visual subject of this video (e.g. "a neutron star collapsed to 20km diameter, surface temperature 600,000 Kelvin, emitting blue-white X-ray jets"). Include this exact description in every scene's visual_prompt for visual consistency across cuts.
+## ANCHOR OBJECT RULE — MANDATORY COMPOSITION VARIATION
+Identify one Anchor Object (the key visual subject). Reference it in every scene's visual_prompt BUT vary the camera angle, scale, and framing every single scene. NEVER use the same composition twice — DALL-E 3 will repeat the exact same image if you repeat the same description.
+
+Required camera progression across scenes:
+- Scene 1: EXTREME WIDE SHOT — anchor object tiny against vast cosmic scale, establishing dread
+- Scene 2: CLOSE-UP — razor-thin edge or surface detail of the anchor object, intimate and terrifying
+- Scene 3: MEDIUM WIDE — anchor object filling 40% of frame, surrounding environment visible
+- Scene 4: EXTREME CLOSE-UP — microscopic texture, crystalline structure, or membrane surface
+- Scene 5: WIDE SHOT — anchor object as a wall or horizon consuming one side of the frame
+- Scene 6+: LOW ANGLE or ORBITAL — looking up at or spiralling around the anchor object
+
+Do NOT copy-paste the anchor_object description verbatim into each visual_prompt. Instead reference it by shorthand (e.g. "the bubble membrane") and write a completely new camera/environment description each time.
 
 ## VISUAL_PROMPT RULES — DALL-E Expansion Method
 Each visual_prompt MUST contain ALL of:
@@ -1564,6 +1574,9 @@ Each visual_prompt MUST contain ALL of:
 4. CAMERA: Lens, F-stop, framing (e.g. "14mm ultra-wide, f/11, extreme wide shot showing scale, 9:16 vertical portrait")
 5. MANDATORY TOKENS: cinematic scale, photorealistic space photography, Ray-tracing, Global Illumination, nihilistic atmosphere, Unreal Engine 6 render style, sharp focus
 6. ANTI-ARTIFACT LANGUAGE: Use positive descriptions — "anatomically correct proportions, five distinct fingers, hyper-realistic skin detail" not "no extra fingers"
+
+## FORBIDDEN VISUAL ELEMENTS
+NEVER include in any visual_prompt: human hands holding objects, magical orbs, wizard imagery, fantasy tropes, supernatural glowing objects cradled in palms, religious iconography. If a scene needs a "scale reference", use Earth's atmosphere, a galaxy, or a planetary surface — NOT human anatomy. The channel's terror comes from scale and science, not metaphor or symbolism.
 
 ## TONE & SCRIPT RULES
 - The "cta_question" field must invite viewers to comment on the cosmic concept — e.g. "Does the size of the universe terrify you?" Keep it under 12 words.
@@ -1584,6 +1597,7 @@ Rules:
 - Scene 1: 2–3s hook using one of the four required hook structures
 - Every fact must be 100% scientifically accurate — double-check distances, temperatures, timescales
 - Final scene: CTA asking viewers to comment on what terrifies them most about this topic (2–3s max)
+- impact_beat: set to true for the 1-2 scenes with the most dramatic, sudden reveal or climax word (e.g. "gone", "dead", "silence", "nothing"). Max 2 scenes with impact_beat: true per video.
 - visual_prompt for each scene: describe the specific deep space subject with Cosmic Dread aesthetic (colours, lighting, mood, subject position) — these go directly to DALL-E 3
 - duration_seconds: must reflect actual scene length, 2–6s max per scene, never exceed 6s
 - full_voiceover_script: all voiceover lines as one continuous paragraph — must be ${maxWords} words or fewer`;
@@ -1596,8 +1610,18 @@ ${JSON_SCHEMA}
 ## VISUAL DNA: History Mystery
 Found Footage meets Cinematic Period Drama. Lighting: Chiaroscuro, heavy shadows, flickering candlelight, volumetric fog. Texture: Daguerreotype grain, wet plate collodion artifacts, high skin-pore detail, weathered fabric. Color Palette: Sepia, desaturated teals, bone white, muddy browns.
 
-## ANCHOR OBJECT RULE
-Identify one Anchor Object — the key visual subject of this video (e.g. "a cracked medieval skull with gold tooth fillings, hairline fractures across parietal bone"). Include this exact description in every scene's visual_prompt for visual consistency across cuts.
+## ANCHOR OBJECT RULE — MANDATORY COMPOSITION VARIATION
+Identify one Anchor Object (the key visual subject). Reference it in every scene's visual_prompt BUT vary the camera angle, scale, and framing every single scene. NEVER use the same composition twice.
+
+Required camera progression across scenes:
+- Scene 1: WIDE ESTABLISHING SHOT — anchor object in its full historical environment
+- Scene 2: CLOSE-UP — surface texture, material detail, age and decay visible
+- Scene 3: MEDIUM — object in context, environment framing it dramatically
+- Scene 4: EXTREME CLOSE-UP — a single detail: inscription, crack, stain, or mark
+- Scene 5: LOW ANGLE — looking up at or beneath the object, distorted perspective
+- Scene 6+: Different angle entirely — overhead, silhouette, partial reveal through shadow
+
+Do NOT copy-paste the anchor_object description verbatim into every visual_prompt. Reference it by shorthand and write a completely new composition each time.
 
 ## VISUAL_PROMPT RULES — DALL-E Expansion Method
 Each visual_prompt MUST contain ALL of:
@@ -1607,6 +1631,9 @@ Each visual_prompt MUST contain ALL of:
 4. CAMERA: Lens type, F-stop, framing (e.g. "24mm wide-angle lens, f/2.8, low-angle looking up at subject, 9:16 vertical composition")
 5. MANDATORY TOKENS: hyper-realistic textures, 8k resolution, shot on 35mm film, historical accuracy, eerie atmosphere, macro photography
 6. ANTI-ARTIFACT LANGUAGE: Use positive descriptions — "anatomically correct hands, five distinct fingers, sharp fingernail detail, hyper-realistic skin folds" not "no extra fingers"
+
+## FORBIDDEN VISUAL ELEMENTS
+NEVER include in any visual_prompt: fantasy tropes, magical elements, glowing orbs held in hands, supernatural imagery, anachronistic objects. Historical terror must come from real documented evidence — artifacts, locations, documents, and environments — not symbolic metaphor.
 
 ## SCRIPT RULES
 - The "cta_question" field must be a single engaging question inviting viewers to comment — e.g. "Which of these facts surprised you most?" Keep it under 12 words.
@@ -1635,7 +1662,7 @@ Rules:
   const resp = await fetch(LOCAL_GATEWAY + '/api/script', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ system: systemPrompt, user: userPrompt, wordLimit: maxWords })
+    body: JSON.stringify({ system: systemPrompt, user: userPrompt, wordLimit: maxWords, max_tokens: 6000 })
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
