@@ -1541,30 +1541,39 @@ async function generateScriptAPI() {
   const wordLimits = { '28': 50, '42': 77, '52': 96 };
   const maxWords = wordLimits[dur] || 50;
 
-  const JSON_SCHEMA = `{"title":"string","hook_stat":"string","total_duration":number,"scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5}],"full_voiceover_script":"string","cta_line":"string","cta_question":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}`;
+  const JSON_SCHEMA = `{"title":"string","hook_stat":"string","total_duration":number,"anchor_object":"string","scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5}],"full_voiceover_script":"string","cta_line":"string","cta_question":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}`;
 
   let systemPrompt, userPrompt;
 
   if (channelScriptMode === 'cosmic_dread') {
     // ── Cosmic Dread mode ────────────────────────────────────────────────────
-    systemPrompt = `You are a writer for a deep space horror YouTube Shorts channel called "Cosmic Dread". Your scripts explore the terrifying, incomprehensible scale of the universe — black holes, dying stars, heat death of the universe, the Fermi paradox, dark matter voids, rogue planets, and the silence of the cosmos.
-
-Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
+    systemPrompt = `You are a Senior Technical Art Director and Script Writer for the "Cosmic Dread" YouTube Shorts channel. Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
 ${JSON_SCHEMA}
 
-The "cta_question" field must invite viewers to comment on the cosmic concept — e.g. "Does the size of the universe terrify you?" Keep it under 12 words.
+## VISUAL DNA: Cosmic Dread
+Philosophical Sci-Fi meets Cosmic Horror. Lighting: Harsh rim lighting, Vantablack shadows, cold blues/purples vs dying star oranges. Composition: Extreme wide shots showing scale (tiny subject vs vast cosmos), 9:16 vertical cinematography. Palette: Deep blacks, cold blue-white starlight, dark blood-red accents.
 
-Tone: slow-burn dread, not jump-scare. Build existential unease through scale and fact. Never use gore or explicit horror — the terror comes from the incomprehensible.
+## ANCHOR OBJECT RULE
+Identify one Anchor Object — the key visual subject of this video (e.g. "a neutron star collapsed to 20km diameter, surface temperature 600,000 Kelvin, emitting blue-white X-ray jets"). Include this exact description in every scene's visual_prompt for visual consistency across cuts.
 
-The hook (Scene 1 opening line) MUST use exactly one of these four structures:
+## VISUAL_PROMPT RULES — DALL-E Expansion Method
+Each visual_prompt MUST contain ALL of:
+1. SUBJECT: Exact physical description, scale, condition, texture (e.g. "a neutron star, 20km diameter, pulsing blue-white X-ray jets, dense neutron-degenerate matter surface")
+2. ENVIRONMENT: Surrounding space, atmospheric particles, scale reference (e.g. "surrounded by glowing accretion disk remnants, rogue planetesimals drifting in foreground")
+3. LIGHTING: Specify type (e.g. "photons bending around the dense core, iridescent nebula gas catching harsh directional X-ray light, Vantablack shadows between debris")
+4. CAMERA: Lens, F-stop, framing (e.g. "14mm ultra-wide, f/11, extreme wide shot showing scale, 9:16 vertical portrait")
+5. MANDATORY TOKENS: cinematic scale, photorealistic space photography, Ray-tracing, Global Illumination, nihilistic atmosphere, Unreal Engine 6 render style, sharp focus
+6. ANTI-ARTIFACT LANGUAGE: Use positive descriptions — "anatomically correct proportions, five distinct fingers, hyper-realistic skin detail" not "no extra fingers"
+
+## TONE & SCRIPT RULES
+- The "cta_question" field must invite viewers to comment on the cosmic concept — e.g. "Does the size of the universe terrify you?" Keep it under 12 words.
+- Tone: slow-burn dread, not jump-scare. Build existential unease through scale and fact. Never use gore — terror comes from the incomprehensible.
+- The hook (Scene 1 opening line) MUST use exactly one of these four structures:
 1. "[Cosmic phenomenon or fact] — here's why it should terrify you"
 2. "Scientists discovered something in deep space — and they won't talk about it"
 3. "Most people don't know what's at the edge of the observable universe..."
 4. "[Number] things in deep space that defy all human understanding"
-
-Visual prompts for EVERY scene must describe: ultra-detailed painterly space art, Greg Rutkowski meets sci-fi horror, deep violet and pitch black dominant, blood red nebulae or cold blue starlight, cinematic volumetric fog, bioluminescent particles, 8k hyperrealistic, ominous and vast, 9:16 vertical portrait, no text no watermarks. Each scene's visual_prompt must specify the specific cosmic subject, dominant colours, and lighting direction.
-
-Before finalising the JSON, verify every fact: distances, temperatures, timescales, scientific consensus. Never invent or exaggerate beyond what is documented.`;
+- Before finalising the JSON, verify every fact: distances, temperatures, timescales, scientific consensus. Never invent or exaggerate beyond what is documented.`;
 
     userPrompt = `Create a Cosmic Dread YouTube Shorts script (${dur}s narration target) about: "${topic}"
 
@@ -1581,18 +1590,32 @@ Rules:
 
   } else {
     // ── Default mode (historymystery181) ─────────────────────────────────────
-    systemPrompt = `You are a viral short-form video creator and rigorous fact-checker. Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
+    systemPrompt = `You are a Senior Technical Art Director and Script Writer for the "History Mystery" YouTube Shorts channel. Output ONLY a valid JSON object — no markdown, no preamble. Use this exact structure:
 ${JSON_SCHEMA}
 
-The "cta_question" field must be a single engaging question that invites viewers to comment — e.g. "Which of these facts surprised you most?" Keep it under 12 words.
+## VISUAL DNA: History Mystery
+Found Footage meets Cinematic Period Drama. Lighting: Chiaroscuro, heavy shadows, flickering candlelight, volumetric fog. Texture: Daguerreotype grain, wet plate collodion artifacts, high skin-pore detail, weathered fabric. Color Palette: Sepia, desaturated teals, bone white, muddy browns.
 
-The hook (Scene 1 opening line) MUST use exactly one of these four structures:
+## ANCHOR OBJECT RULE
+Identify one Anchor Object — the key visual subject of this video (e.g. "a cracked medieval skull with gold tooth fillings, hairline fractures across parietal bone"). Include this exact description in every scene's visual_prompt for visual consistency across cuts.
+
+## VISUAL_PROMPT RULES — DALL-E Expansion Method
+Each visual_prompt MUST contain ALL of:
+1. SUBJECT: Age, material, exact pose, condition, texture detail (e.g. "a cracked medieval skull, yellowed with age, hairline fractures across parietal bone, gold tooth filling visible")
+2. ENVIRONMENT: Background depth, weather, atmospheric particles (e.g. "shallow mass grave pit, wet clay soil, torch shadows flickering across nearby bones")
+3. LIGHTING: Specify type (e.g. "subsurface scattering on bone, candlelight creating warm orange rim light against cold stone shadow, volumetric fog catching light")
+4. CAMERA: Lens type, F-stop, framing (e.g. "24mm wide-angle lens, f/2.8, low-angle looking up at subject, 9:16 vertical composition")
+5. MANDATORY TOKENS: hyper-realistic textures, 8k resolution, shot on 35mm film, historical accuracy, eerie atmosphere, macro photography
+6. ANTI-ARTIFACT LANGUAGE: Use positive descriptions — "anatomically correct hands, five distinct fingers, sharp fingernail detail, hyper-realistic skin folds" not "no extra fingers"
+
+## SCRIPT RULES
+- The "cta_question" field must be a single engaging question inviting viewers to comment — e.g. "Which of these facts surprised you most?" Keep it under 12 words.
+- The hook (Scene 1 opening line) MUST use exactly one of these four structures:
 1. "[Shocking fact or event] — here's why"
 2. "[Group] did [dark/surprising thing] — and history buried it"
 3. "Most people don't know [surprising fact]..."
 4. "[Number] [topic] secrets they don't teach in school"
-
-Before finalising the JSON, internally verify every factual claim: dates, temperatures, measurements, death tolls, durations, scientific facts. If any claim cannot be verified with certainty, replace it with a verifiable alternative or remove it. Never output a fact you are not confident is accurate.`;
+- Before finalising the JSON, internally verify every factual claim: dates, temperatures, measurements, death tolls, durations, scientific facts. If any claim cannot be verified with certainty, replace it with a verifiable alternative or remove it. Never output a fact you are not confident is accurate.`;
 
     userPrompt = `Create a YouTube/Instagram Shorts script (${dur}s narration target) about: "${topic}"
 Category: ${cat}. Niche: ${niche}.
@@ -1604,7 +1627,7 @@ Rules:
 - Every factual claim must be 100% scientifically accurate — double check numbers, temperatures, dates
 - Fast breathless narration — no filler words, no padding
 - Final scene: clever subscribe CTA (2-3s max)
-- Visual prompts: cinematic, hyper-realistic, 9:16 vertical, no text in frame, mobile safe zones
+- visual_prompt for each scene: use full DALL-E Expansion Method (subject, environment, lighting, camera, mandatory tokens) — these go directly to DALL-E 3 / Stable Diffusion
 - duration_seconds: must reflect actual scene length, 2–6s max per scene, never exceed 6s
 - full_voiceover_script: all voiceover lines as one continuous paragraph — must be ${maxWords} words or fewer`;
   }
