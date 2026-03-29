@@ -828,7 +828,7 @@ const CHANNEL_PROFILES = {
   cosmic_dread: {
     scriptMode:    'cosmic_dread',
     accentColor:   '#FF3B6B',
-    imagePrefix:   'Ultra-detailed painterly deep space horror art, Greg Rutkowski meets sci-fi horror, 9:16 vertical portrait,',
+    imagePrefix:   'High-end sci-fi concept art, surreal cosmic fantasy, Unreal Engine 5 cinematic render, hyper-detailed volumetric lighting, vivid luminous colors (glowing purples, fiery oranges, neon blues), magical realism, ethereal glowing elements, masterpiece digital painting, 9:16 vertical portrait,',
     defaultMotion: 'cosmicmixed',
     defaultVoice:  'Joseph',
     stability:     0.35,
@@ -1541,7 +1541,7 @@ async function generateScriptAPI() {
   const wordLimits = { '28': 50, '42': 77, '52': 96 };
   const maxWords = wordLimits[dur] || 50;
 
-  const JSON_SCHEMA = `{"title":"string","hook_stat":"string","total_duration":number,"anchor_object":"string","scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","duration_seconds":5,"impact_beat":false}],"full_voiceover_script":"string","cta_line":"string","cta_question":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}`;
+  const JSON_SCHEMA = `{"title":"string","hook_stat":"string","total_duration":number,"anchor_object":"string","scenes":[{"scene_number":1,"title":"string","time_start":"0:00","time_end":"0:05","voiceover":"string","visual_prompt":"string","motion_effect":"string","duration_seconds":5,"impact_beat":false}],"full_voiceover_script":"string","cta_line":"string","cta_question":"string","tags":["tag1","tag2","tag3","tag4","tag5"]}`;
 
   let systemPrompt, userPrompt;
 
@@ -1551,7 +1551,18 @@ async function generateScriptAPI() {
 ${JSON_SCHEMA}
 
 ## VISUAL DNA: Cosmic Dread
-Philosophical Sci-Fi meets Cosmic Horror. Lighting: Harsh rim lighting, Vantablack shadows, cold blues/purples vs dying star oranges. Composition: Extreme wide shots showing scale (tiny subject vs vast cosmos), 9:16 vertical cinematography. Palette: Deep blacks, cold blue-white starlight, dark blood-red accents.
+Surreal Cosmic Fantasy meets Philosophical Sci-Fi. Lighting: Hyper-detailed volumetric light rays, bioluminescent glows, fiery plasma halos, ethereal radiance. Composition: Surreal juxtaposition — cosmic anomaly or phenomenon floating above or merging with a recognisable terrestrial Earth landscape (mountains, ocean, desert, city skyline), 9:16 vertical cinematography. Palette: Vivid luminous colors — glowing purples, fiery oranges, neon blues, sparkling stardust whites, radiant gold accents.
+
+## SURREAL JUXTAPOSITION RULE — MANDATORY
+Every scene must place a cosmic subject (black hole, nebula, false vacuum bubble, neutron star, quantum foam, etc.) IN DIRECT VISUAL CONTRAST with a recognisable earthly landscape or human-scale environment. Examples: "a glowing false vacuum bubble expanding above an alpine mountain range at dusk", "a neutron star the size of a city hovering over a vast ocean, its X-ray jets reflecting off the water". This contrast is what makes CosmoNova visuals iconic — the familiar meets the incomprehensible.
+
+## METAPHORICAL PHYSICS RULE — MANDATORY
+Where a physics concept is abstract (time dilation, entropy, vacuum decay, quantum uncertainty), represent it through a beautiful physical metaphor:
+- Time: glowing clock faces dissolving into stardust, hourglasses filled with nebula gas
+- Entropy: crystalline structures fragmenting into luminous particles against void
+- Vacuum decay: soap-bubble-like membrane with iridescent walls expanding from a single glowing point
+- Quantum uncertainty: layered translucent versions of the same object at slightly different positions, glowing edges
+Keep metaphors awe-inspiring and beautiful, not dark or terrifying.
 
 ## ANCHOR OBJECT RULE — MANDATORY COMPOSITION VARIATION
 Identify one Anchor Object (the key visual subject). Reference it in every scene's visual_prompt BUT vary the camera angle, scale, and framing every single scene. NEVER use the same composition twice — DALL-E 3 will repeat the exact same image if you repeat the same description.
@@ -1572,11 +1583,19 @@ Each visual_prompt MUST contain ALL of:
 2. ENVIRONMENT: Surrounding space, atmospheric particles, scale reference (e.g. "surrounded by glowing accretion disk remnants, rogue planetesimals drifting in foreground")
 3. LIGHTING: Specify type (e.g. "photons bending around the dense core, iridescent nebula gas catching harsh directional X-ray light, Vantablack shadows between debris")
 4. CAMERA: Lens, F-stop, framing (e.g. "14mm ultra-wide, f/11, extreme wide shot showing scale, 9:16 vertical portrait")
-5. MANDATORY TOKENS: cinematic scale, photorealistic space photography, Ray-tracing, Global Illumination, nihilistic atmosphere, Unreal Engine 6 render style, sharp focus
+5. MANDATORY TOKENS: cinematic scale, Unreal Engine 5 cinematic render, Ray-tracing, Global Illumination, volumetric light rays, bioluminescent glow, sparkling stardust, ethereal radiance, vivid luminous colors, surreal cosmic fantasy, masterpiece digital painting, sharp focus
 6. ANTI-ARTIFACT LANGUAGE: Use positive descriptions — "anatomically correct proportions, five distinct fingers, hyper-realistic skin detail" not "no extra fingers"
 
 ## FORBIDDEN VISUAL ELEMENTS
-NEVER include in any visual_prompt: human hands holding objects, magical orbs, wizard imagery, fantasy tropes, supernatural glowing objects cradled in palms, religious iconography. If a scene needs a "scale reference", use Earth's atmosphere, a galaxy, or a planetary surface — NOT human anatomy. The channel's terror comes from scale and science, not metaphor or symbolism.
+NEVER include in any visual_prompt: human hands holding objects, wizard imagery, religious iconography, fantasy RPG tropes (staffs, spell circles, runes), cheesy stock-photo poses. Glowing orbs are allowed ONLY as physical representations of cosmic objects (stars, plasma balls, vacuum bubbles) — not as magical props cradled in hands. Scale references must use Earth landscapes, oceans, or city skylines — NOT human anatomy.
+
+## MOTION EFFECT RULES — ASSIGN PER SCENE
+Each scene's `motion_effect` must be one of: `zoom`, `zoomout`, `slowzoom`, `vectorout`, `panleft`, `panright`, `driftup`, `driftdown`, `static`.
+- Use `slowzoom` for Scene 1 (opening — slow build of dread)
+- Use `zoomout` or `driftdown` for the final scene (resolution/pull-back)
+- **No yo-yo:** never place `zoom` immediately before or after `zoomout` in consecutive scenes
+- **Vector continuity:** when using a directional pan (`panleft`, `panright`, `driftup`, `driftdown`), the next scene must continue the same direction or use a neutral effect (`slowzoom`, `static`) — never abruptly reverse (e.g. `panleft` followed by `panright` is forbidden)
+- Build from slow/neutral at the start to more active motion in the middle, then settle at the end
 
 ## TONE & SCRIPT RULES
 - The "cta_question" field must invite viewers to comment on the cosmic concept — e.g. "Does the size of the universe terrify you?" Keep it under 12 words.
@@ -1598,7 +1617,8 @@ Rules:
 - Every fact must be 100% scientifically accurate — double-check distances, temperatures, timescales
 - Final scene: CTA asking viewers to comment on what terrifies them most about this topic (2–3s max)
 - impact_beat: set to true for the 1-2 scenes with the most dramatic, sudden reveal or climax word (e.g. "gone", "dead", "silence", "nothing"). Max 2 scenes with impact_beat: true per video.
-- visual_prompt for each scene: describe the specific deep space subject with Cosmic Dread aesthetic (colours, lighting, mood, subject position) — these go directly to DALL-E 3
+- motion_effect for each scene: assign one of the valid effect values following the no-yo-yo and vector continuity rules above — use slowzoom for Scene 1, zoomout or driftdown for the final scene
+- visual_prompt for each scene: apply CosmoNova aesthetic — surreal juxtaposition of cosmic subject above earthly landscape, vivid luminous colors (glowing purples, fiery oranges, neon blues), metaphorical physics representations, volumetric glow, masterpiece digital painting style — these go directly to DALL-E 3
 - duration_seconds: must reflect actual scene length, 2–6s max per scene, never exceed 6s
 - full_voiceover_script: all voiceover lines as one continuous paragraph — must be ${maxWords} words or fewer`;
 
@@ -1635,6 +1655,13 @@ Each visual_prompt MUST contain ALL of:
 ## FORBIDDEN VISUAL ELEMENTS
 NEVER include in any visual_prompt: fantasy tropes, magical elements, glowing orbs held in hands, supernatural imagery, anachronistic objects. Historical terror must come from real documented evidence — artifacts, locations, documents, and environments — not symbolic metaphor.
 
+## MOTION EFFECT RULES — ASSIGN PER SCENE
+Each scene's `motion_effect` must be one of: `zoom`, `zoomout`, `slowzoom`, `vectorout`, `panleft`, `panright`, `driftup`, `driftdown`, `static`.
+- Use `slowzoom` for Scene 1 (opening — slow establish)
+- Use `zoomout` or `driftdown` for the final scene (pull-back / resolution)
+- **No yo-yo:** never place `zoom` immediately before or after `zoomout` in consecutive scenes
+- **Vector continuity:** when using a directional pan, the next scene must continue the same direction or use a neutral effect — never abruptly reverse (e.g. `panleft` → `panright` is forbidden)
+
 ## SCRIPT RULES
 - The "cta_question" field must be a single engaging question inviting viewers to comment — e.g. "Which of these facts surprised you most?" Keep it under 12 words.
 - The hook (Scene 1 opening line) MUST use exactly one of these four structures:
@@ -1654,6 +1681,7 @@ Rules:
 - Every factual claim must be 100% scientifically accurate — double check numbers, temperatures, dates
 - Fast breathless narration — no filler words, no padding
 - Final scene: clever subscribe CTA (2-3s max)
+- motion_effect for each scene: assign one of the valid effect values following the no-yo-yo and vector continuity rules — use slowzoom for Scene 1, zoomout or driftdown for the final scene
 - visual_prompt for each scene: use full DALL-E Expansion Method (subject, environment, lighting, camera, mandatory tokens) — these go directly to DALL-E 3 / Stable Diffusion
 - duration_seconds: must reflect actual scene length, 2–6s max per scene, never exceed 6s
 - full_voiceover_script: all voiceover lines as one continuous paragraph — must be ${maxWords} words or fewer`;
@@ -2210,7 +2238,7 @@ async function assembleVideoAPI() {
       title:       lastOutput.title || 'shorts_video',
       motionMode,
       showText:    showTextOverlay,
-      scenes:      lastOutput.scenes.map(s => ({ voiceover: s.voiceover, title: s.title })),
+      scenes:      lastOutput.scenes.map(s => ({ voiceover: s.voiceover, title: s.title, motion_effect: s.motion_effect || null })),
       channelName,
       showIntro:   showIntro && !!channelName,
       showOutro:   showOutro && !!channelName,
