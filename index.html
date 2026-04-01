@@ -920,10 +920,14 @@ function updateCostSummary() {
   imageProvider = provider;
 
   // Sync provider cards if visible
-  ['dalle3','dalle2','pexels'].forEach(id => {
+  ['dalle3','dalle2','pexels','upload'].forEach(id => {
     const card = document.getElementById('prov-' + id);
     if (card) card.classList.toggle('active', id === provider);
   });
+
+  // Show/hide upload slots container
+  const uploadWrap = document.getElementById('uploadSlotsWrap');
+  if (uploadWrap) uploadWrap.style.display = provider === 'upload' ? 'block' : 'none';
 
   // Show DALL-E 3 quality toggle only when DALL-E 3 is selected
   const qualityGroup = document.getElementById('dalle3QualityGroup');
@@ -1090,7 +1094,14 @@ function saveChannelName() {
 function loadChannelName() {
   const saved = localStorage.getItem('channelName') || '';
   const el = document.getElementById('channelNameInput');
-  if (el && saved) el.value = saved;
+  if (el && saved) {
+    el.value = saved;
+    // Re-apply profile so JS variables (channelScriptMode, activeProfile, etc.) match the saved channel
+    const matchedKey = Object.keys(CHANNEL_PROFILES).find(k =>
+      saved.toLowerCase().replace(/[\s_]/g, '').includes(k.replace('_', ''))
+    );
+    applyChannelProfile(matchedKey || 'historymystery181');
+  }
 }
 
 function selectVoSource(src) {
@@ -1322,6 +1333,12 @@ let gatewayAvailable = false;
 // ─── Pipeline state ───────────────────────────────────────────────────────────
 let currentTopicTag  = '';
 let currentCtaQuestion = '';
+
+window.onbeforeunload = (e) => {
+  if (lastOutput || generatedImages.length > 0) {
+    return 'You have unsaved media in memory. Reloading will clear this project.';
+  }
+};
 
 window.onload = () => {
   updateCostSummary();
@@ -2438,6 +2455,8 @@ function renderOutput(out) {
   ).join('');
 
   document.getElementById('outputArea').classList.add('visible');
+  // Re-trigger IntersectionObserver for elements that were hidden (display:none) during initial observe
+  requestAnimationFrame(() => window._reobserveSlideUps?.());
   document.getElementById('outputArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
   // Reset uploads for new script
   uploadedImages = {};
@@ -2526,6 +2545,10 @@ function loadScriptFromFile(event) {
       }
       lastOutput = parsed;
       lastOutput._loadedFromFile = true; // script cost = $0
+      // Clear stale word timings from previous session — using them with a new script
+      // would produce completely wrong subtitle timestamps in the assembled video.
+      wordTimings = [];
+      sessionStorage.removeItem('wordTimings');
       hideError();
 
 
@@ -2590,6 +2613,8 @@ function togglePlay() {
     });
   }
   observeSlideUps();
+  // Expose for renderOutput to call after making outputArea visible (Safari fix)
+  window._reobserveSlideUps = observeSlideUps;
   // Re-observe when dynamic content (outputArea) is added
   new MutationObserver(observeSlideUps).observe(document.body, { childList: true, subtree: true });
 
